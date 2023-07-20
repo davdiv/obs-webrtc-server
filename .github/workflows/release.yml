@@ -1,0 +1,38 @@
+name: release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: true
+        description: Version number (x.y.z)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+          cache: "npm"
+      - run: npm ci
+      - run: |
+          git config --global user.name github-actions
+          git config --global user.email github-actions@github.com
+          npm version ${{ inputs.version }}
+      - run: git show HEAD
+      - run: npm run ci
+      - run: git push origin main v${{ inputs.version }}
+      - run: |
+          npm whoami
+          npm publish --provenance --access=public
+        name: "npm publish"
+        working-directory: dist
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

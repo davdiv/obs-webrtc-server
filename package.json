@@ -1,0 +1,67 @@
+{
+	"name": "obs-webrtc-server",
+	"author": "DivDE <divde@musicociel.fr>",
+	"description": "Web server allowing browsers connected to it to share their camera/microphone/screen, which are automatically added as sources in OBS Studio and can be recorded individually.",
+	"keywords": [
+		"webrtc",
+		"server",
+		"OBS",
+		"studio",
+		"phone",
+		"camera",
+		"screen",
+		"audio",
+		"video"
+	],
+	"version": "0.0.0",
+	"type": "module",
+	"private": true,
+	"license": "MIT",
+	"bin": "./obs-webrtc-server",
+	"devDependencies": {
+		"@amadeus-it-group/tansu": "^0.0.22",
+		"@sveltejs/vite-plugin-svelte": "^2.4.2",
+		"@types/jsrsasign": "^10.5.8",
+		"@types/obs-studio": "^2.17.0",
+		"@types/ws": "^8.5.5",
+		"@typescript-eslint/eslint-plugin": "^6.1.0",
+		"@typescript-eslint/parser": "^6.1.0",
+		"ajv": "^8.12.0",
+		"eslint": "^8.45.0",
+		"eslint-config-prettier": "^8.8.0",
+		"fast-deep-equal": "^3.1.3",
+		"jsrsasign": "^10.8.6",
+		"nodemon": "^3.0.1",
+		"obs-websocket-js": "^5.0.3",
+		"prettier": "^3.0.0",
+		"prettier-plugin-svelte": "^3.0.0",
+		"sirv": "^2.0.3",
+		"svelte": "^4.1.1",
+		"svelte-check": "^3.4.6",
+		"tslib": "^2.6.0",
+		"typescript": "^5.1.6",
+		"typescript-json-schema": "^0.59.0",
+		"vite": "^4.4.5",
+		"ws": "^8.13.0",
+		"yaml": "^2.3.1"
+	},
+	"scripts": {
+		"ci": "npm run build && npm run lint && npm run format:check",
+		"build": "npm run build:client && npm run build:server && npm run build:svelte-check",
+		"build:client": "vite build -c vite.client.config.ts",
+		"build:server": "vite build -c vite.server.config.ts",
+		"build:svelte-check": "svelte-check",
+		"dev": "vite build -c vite.server.config.ts --watch -m development",
+		"format:check": "prettier . --list-different",
+		"format:fix": "prettier . --write",
+		"lint": "eslint .",
+		"start": "nodemon --watch dist/obs-webrtc-server dist/obs-webrtc-server"
+	},
+	"bugs": {
+		"url": "https://github.com/davdiv/obs-webrtc-server/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/davdiv/obs-webrtc-server.git"
+	}
+}
