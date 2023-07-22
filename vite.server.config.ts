@@ -22,7 +22,6 @@ export default defineConfig(async () => ({
 		"process.env.WS_NO_BUFFER_UTIL": "true",
 	},
 	build: {
-		minify: false,
 		emptyOutDir: false,
 		target: "node20",
 		outDir: "./dist",
