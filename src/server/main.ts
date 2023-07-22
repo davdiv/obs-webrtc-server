@@ -9,6 +9,10 @@ const cli = async () => {
 		console.log(`Usage: obs-webrtc-server [configFile.yaml]\nIf the configuration file does not exist, it is created.`);
 		return;
 	}
+	if (args[0] === "--version") {
+		console.log(import.meta.env.VERSION);
+		return;
+	}
 	const configFilePath = resolve(args[0] || "obs-webrtc-server.yaml");
 	const configFileContent = await openConfigFile(configFilePath);
 	const abortController = new AbortController();

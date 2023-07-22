@@ -6,6 +6,7 @@ import { resolve } from "path";
 import tjs from "typescript-json-schema";
 import { fileURLToPath } from "url";
 import { defineConfig } from "vite";
+import { version } from "./package.json";
 
 const validatorFile = fileURLToPath(new URL("./src/server/validator.ts", import.meta.url));
 const configFile = fileURLToPath(new URL("./src/server/config.ts", import.meta.url));
@@ -20,6 +21,7 @@ export default defineConfig(async () => ({
 	},
 	define: {
 		"process.env.WS_NO_BUFFER_UTIL": "true",
+		"import.meta.env.VERSION": JSON.stringify(version),
 	},
 	build: {
 		emptyOutDir: false,
