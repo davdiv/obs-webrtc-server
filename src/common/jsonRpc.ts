@@ -1,10 +1,18 @@
+import type { ReadableSignal } from "@amadeus-it-group/tansu";
+import { asReadable } from "@amadeus-it-group/tansu";
+import { applyPatch, compare } from "fast-json-patch";
+import { immerWritable } from "./immerWritable";
+
 export const stringifyError = (error: any) => `${error}`.replace(/^Error:\s*/, "");
 
 export type RemoteFunctionParam<T> = T extends (arg: infer U) => any ? U : never;
 export type RemoteFunctionReturnType<T> = T extends (arg: any) => infer V ? V : never;
-export type RemoteFunctionImpl<T, Context> = T extends (arg: infer U) => infer V ? (arg: U, context: Context) => Promise<V> : never;
-export type RemoteInterfaceImpl<T, Context> = { [K in keyof T]: RemoteFunctionImpl<T[K], Context> };
-export type CallMethod<T> = <K extends keyof T>(methodName: K, params: RemoteFunctionParam<T[K]>) => Promise<RemoteFunctionReturnType<T[K]>>;
+export type RemoteFunctionImpl<T> = T extends (arg: infer U) => infer V ? (arg: U) => Promise<V> : never;
+export type RemoteInterfaceImpl<T> = { [K in keyof T]: RemoteFunctionImpl<T[K]> };
+export interface CallMethod<T, DR> {
+	<K extends keyof T>(methodName: K, params: RemoteFunctionParam<T[K]>): Promise<RemoteFunctionReturnType<T[K]>>;
+	data$: ReadableSignal<DR | undefined>;
+}
 export interface JsonRPCTransport {
 	write(message: string): void;
 	isClosed(): boolean;
@@ -12,7 +20,7 @@ export interface JsonRPCTransport {
 	addMessageListener(listener: (value: string) => void): void;
 }
 
-export const jsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, Context>, transport: JsonRPCTransport, context: Context) => {
+export const jsonRpc = <T, U, DR, DS>(methods: RemoteInterfaceImpl<U>, transport: JsonRPCTransport, dataSent$: ReadableSignal<DS>) => {
 	methods = Object.assign(Object.create(null), methods);
 
 	const sendJson = (json: any) => {
@@ -23,7 +31,6 @@ export const jsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, Context>,
 	transport.addMessageListener(async (stringValue: string) => {
 		let value;
 		try {
-			// TODO: __proto__
 			value = JSON.parse(stringValue);
 		} catch (error) {
 			// parse error
@@ -38,7 +45,7 @@ export const jsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, Context>,
 					sendJson({ jsonrpc: "2.0", error: { message: "Method not found", code: -32601 }, id });
 					return;
 				}
-				const result = (await method(value.params, context)) ?? null;
+				const result = (await method(value.params)) ?? null;
 				if (id) {
 					sendJson({ jsonrpc: "2.0", result, id });
 				}
@@ -58,7 +65,7 @@ export const jsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, Context>,
 
 	const idsMap = new Map<number, (value: any) => void>();
 	let idCounter = 0;
-	const callMethod: CallMethod<T> = async (methodName, params) => {
+	const callMethod: CallMethod<T, DR> = async (methodName, params) => {
 		if (transport.isClosed()) {
 			return Promise.reject(new Error("Connection closed"));
 		}
@@ -72,12 +79,30 @@ export const jsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, Context>,
 		return Promise.reject(object.error);
 	};
 	transport.addCloseListener(() => {
+		unsubscribeDataSent();
 		const values = [...idsMap.values()];
 		idsMap.clear();
 		for (const resolve of values) {
 			resolve({ error: new Error("Connection closed") });
 		}
 	});
+
+	let lastSentData: undefined | DS = undefined;
+	const unsubscribeDataSent = dataSent$.subscribe((data) => {
+		const patch = compare({ data: lastSentData }, { data });
+		lastSentData = data;
+		if (patch.length > 0) {
+			sendJson({ jsonrpc: "2.0", method: "data$", params: patch });
+		}
+	});
+	const dataReceived$ = immerWritable(undefined as DR | undefined);
+	(methods as any).data$ = (data: any) => {
+		dataReceived$.update((previousValue) => {
+			const result = applyPatch({ data: previousValue }, data);
+			return result.newDocument.data;
+		});
+	};
+	callMethod.data$ = asReadable(dataReceived$);
 
 	return callMethod;
 };

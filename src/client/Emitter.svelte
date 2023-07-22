@@ -4,12 +4,12 @@
 	import Live from "./Live.svelte";
 	import StreamSelection from "./StreamSelection.svelte";
 
-	const { emitterStream$, remoteReceiverInfo$, data$, recordLocally$ } = model;
+	const { emitterStream$, emitterData$, recordLocally$ } = model;
 </script>
 
-<StreamSelection bind:stream={$emitterStream$} mediaConstraints={$data$?.type === "emitter" ? $data$.mediaConstraints : undefined} bind:record={$recordLocally$} />
+<StreamSelection bind:stream={$emitterStream$} mediaConstraints={$emitterData$?.mediaConstraints} bind:record={$recordLocally$} />
 <Video stream={$emitterStream$} muted /><br />
 
-{#if $remoteReceiverInfo$?.active}
+{#if $emitterData$?.obsActive}
 	<Live />
 {/if}

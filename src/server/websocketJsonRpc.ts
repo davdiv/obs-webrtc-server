@@ -1,9 +1,10 @@
+import type { ReadableSignal } from "@amadeus-it-group/tansu";
 import type { WebSocket } from "ws";
 import type { RemoteInterfaceImpl } from "../common/jsonRpc";
 import { jsonRpc } from "../common/jsonRpc";
 
-export const websocketJsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, Context>, socket: WebSocket, context: Context) => {
-	const res = jsonRpc<T, U, Context>(
+export const websocketJsonRpc = <T, U, DR, DS>(methods: RemoteInterfaceImpl<U>, socket: WebSocket, dataSent$: ReadableSignal<DS>) => {
+	const res = jsonRpc<T, U, DR, DS>(
 		methods,
 		{
 			addMessageListener: (listener) =>
@@ -16,7 +17,7 @@ export const websocketJsonRpc = <T, U, Context>(methods: RemoteInterfaceImpl<U, 
 			isClosed: () => socket.readyState !== socket.OPEN,
 			write: (message) => socket.send(message),
 		},
-		context,
+		dataSent$,
 	);
 	return res;
 };

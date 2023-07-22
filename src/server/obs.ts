@@ -19,9 +19,9 @@ export const obsManager = (
 		return {
 			addId(id: string) {
 				const url = buildURL(id);
-				console.log("Receiver URL:", url);
+				console.log("Adding receiver URL:", url);
 				return () => {
-					console.log("Receiver URL:", url);
+					console.log("Removing receiver URL:", url);
 				};
 			},
 		};

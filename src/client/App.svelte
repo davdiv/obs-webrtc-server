@@ -5,7 +5,7 @@
 	import { model } from "./model";
 	import FullScreenInfo from "./FullScreenInfo.svelte";
 	import StoredFilesList from "./storage/StoredFilesList.svelte";
-	const { connected$, data$, emitterStream$ } = model;
+	const { connected$, emitterOrReceiver$, emitterStream$ } = model;
 </script>
 
 {#if !$isLoading}
@@ -13,12 +13,12 @@
 		<FullScreenInfo>{$_("disconnected")}</FullScreenInfo>
 	{:else if !$connected$}
 		<FullScreenInfo>{$_("connecting")}</FullScreenInfo>
-	{:else if $data$?.type === "emitter"}
+	{:else if $emitterOrReceiver$ === "emitter"}
 		<Emitter />
 		{#if !$emitterStream$}
 			<StoredFilesList />
 		{/if}
-	{:else if $data$?.type === "receiver"}
+	{:else if $emitterOrReceiver$ === "receiver"}
 		<Receiver />
 	{/if}
 {/if}

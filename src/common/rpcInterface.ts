@@ -1,23 +1,34 @@
-export type ServerControlledData = ServerControlledDataEmitter | ServerControlledDataReceiver;
-export interface ServerControlledDataEmitter {
+export type ServerSentInfo = ServerSentEmitterInfo | ServerSentReceiverInfo;
+
+export interface ServerSentEmitterInfo extends ReceiverToEmitterInfo {
 	type: "emitter";
 	mediaConstraints?: MediaStreamConstraints;
 }
-export interface ServerControlledDataReceiver {
+
+export interface ServerSentReceiverInfo {
 	type: "receiver";
 	recordURL?: string;
 	recordOptions?: MediaRecorderOptions;
 }
+
+export type ClientSentInfo = ClientSentEmitterInfo | ClientSentReceiverInfo | undefined;
+
+export interface ClientSentEmitterInfo {
+	streamInfo?: StreamInfo;
+}
+
+export interface ClientSentReceiverInfo extends ReceiverToEmitterInfo {}
+
+export interface ReceiverToEmitterInfo {
+	obsActive?: boolean;
+}
+
 export interface StreamInfo {
 	hasAudio: boolean;
 	hasVideo: boolean;
 }
-export interface ReceiverInfo {
-	active: boolean;
-}
+
 export interface RpcClientInterface {
-	dataChange(data: ServerControlledData): void;
-	receiverInfo(arg: ReceiverInfo): void;
 	createRTCConnection(arg: { configuration: RTCConfiguration }): void;
 	deleteRTCConnection(arg: Record<string, never>): void;
 	createOfferRTCConnection(arg: Record<string, never>): RTCSessionDescriptionInit;
@@ -25,8 +36,7 @@ export interface RpcClientInterface {
 	completeOfferRTCConnection(arg: { answer: RTCSessionDescriptionInit }): void;
 	iceCandidate(arg: { candidate: RTCIceCandidateInit | null }): void;
 }
+
 export interface RpcServerInterface {
-	streamChange(arg: StreamInfo): void;
-	receiverInfo(arg: ReceiverInfo): void;
 	iceCandidate(arg: { candidate: RTCIceCandidateInit | null }): void;
 }

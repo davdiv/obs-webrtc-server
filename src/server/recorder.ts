@@ -60,7 +60,7 @@ export const recordingManager = (config: Pick<ServerConfig, "record" | "recordPr
 			// begining of the recording
 			const deviceShortId = hashId(recording.deviceId);
 			const creationTime = new Date(startTimestamp);
-			const extension = ".dat"; // TODO: use mime type?
+			const extension = ".webm";
 			const filePath = join(recordingsFolder, deviceShortId, `${creationTime.toISOString().replace(/[-:.]/g, "")}${extension}`);
 			console.log("Starting recording of ", filePath);
 			const folder = dirname(filePath);
