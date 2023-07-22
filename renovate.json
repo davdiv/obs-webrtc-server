@@ -1,0 +1,5 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:recommended", ":maintainLockFilesMonthly", "schedule:monthly", "group:allNonMajor"],
+	"rangeStrategy": "bump"
+}
