@@ -1,5 +1,7 @@
 # obs-webrtc-server
 
+[![npm](https://img.shields.io/npm/v/obs-webrtc-server)](https://www.npmjs.com/package/obs-webrtc-server)
+
 Web server allowing browsers connected to it to share their camera/microphone/screen, which are automatically added as sources in OBS Studio and can be recorded individually.
 
 ## Getting started
