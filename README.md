@@ -21,3 +21,5 @@ npx obs-webrtc-server
 - A yaml configuration file is created and the password is saved in it. Feel free to adjust any of the [options](src/server/config.ts) in the configuration file.
 
 - Next time `obs-webrtc-server` is started from the same folder, the configuration file will be reused and no password will be requested. Note that it is possible to specify the path to the configuration file as an argument (`npx obs-webrtc-server obs-webrtc-server.yaml`).
+
+- Connect to the "Emitter URL" displayed on the console from each device which should share its camera/microphone/screen. When a device is connected, a corresponding scene is added in OBS Studio. It is also possible to manually add other scenes that combine the streams coming from multiple devices. When a device disconnects, the automatically added scene is removed.
