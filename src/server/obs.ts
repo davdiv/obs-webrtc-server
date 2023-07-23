@@ -5,7 +5,13 @@ import { hashId } from "./utils/createId";
 
 export const noop = () => {};
 export const obsManager = (
-	{ obsServer = "127.0.0.1", obsPassword, obsPort = 4455, obsScenePrefix = "webrtc-" }: Pick<ServerConfig, "obsServer" | "obsPassword" | "obsPort" | "obsScenePrefix">,
+	{
+		obsServer = "127.0.0.1",
+		obsPassword,
+		obsPort = 4455,
+		obsScenePrefix = "webrtc-",
+		obsSceneExtraSources = [],
+	}: Pick<ServerConfig, "obsServer" | "obsPassword" | "obsPort" | "obsScenePrefix" | "obsSceneExtraSources">,
 	buildURL: (id: string) => string,
 ) => {
 	if (!obsPassword) {
@@ -75,6 +81,15 @@ export const obsManager = (
 					},
 				},
 			);
+			obsSceneExtraSources.forEach((sourceName) => {
+				batchedRequests.push({
+					requestType: "CreateSceneItem",
+					requestData: {
+						sceneName,
+						sourceName,
+					},
+				});
+			});
 		}
 		if (batchedRequests.length > 0) {
 			await obs.callBatch(batchedRequests);

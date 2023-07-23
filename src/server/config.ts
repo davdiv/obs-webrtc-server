@@ -3,6 +3,7 @@ export interface ServerConfig {
 	obsPassword?: string;
 	obsPort?: number;
 	obsScenePrefix?: string;
+	obsSceneExtraSources?: string[];
 	tlsCertificate?: TLSCertificate;
 	listenPort?: number;
 	listenHost?: string;
