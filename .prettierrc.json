@@ -1,0 +1,5 @@
+{
+	"printWidth": 200,
+	"useTabs": true,
+	"plugins": ["prettier-plugin-svelte"]
+}
