@@ -6,6 +6,7 @@
 	export let mediaConstraints: MediaStreamConstraints | undefined;
 	export let mediaDevices: Devices;
 	export let streamConfig: StreamConfig;
+	export let expanded = true;
 
 	let selectedVideoDevice = mediaConstraints?.video === false ? "none" : "default";
 	let selectedAudioDevice = mediaConstraints?.audio === false ? "none" : "default";
@@ -23,6 +24,7 @@
 				configType.deviceId = selection;
 			}
 		}
+		expanded = false;
 	};
 
 	const setConfig = () => {
@@ -41,43 +43,89 @@
 	};
 </script>
 
-<div>
-	<button on:click={setScreenConfig}>{$_("shareScreen")}</button>
-	<br /><br />
-	<label>
-		{$_("videoDevice")}
-		<select bind:value={selectedVideoDevice}>
-			<option value="default">{$_("defaultVideoDevice")}</option>
-			<option value="none">{$_("noVideo")}</option>
-			{#each Object.keys(mediaDevices.videoinput) as id, index}
-				<option value={id}>{mediaDevices.videoinput[id].label || $_("videoDeviceNum", { values: { num: index + 1 } })}</option>
-			{/each}
-		</select>
-	</label>
-	<br />
-	<label
-		>{$_("audioDevice")}
-		<select bind:value={selectedAudioDevice}>
-			<option value="default">{$_("defaultAudioDevice")}</option>
-			<option value="none">{$_("noAudio")}</option>
-			{#each Object.keys(mediaDevices.audioinput) as id, index}
-				<option value={id}>{mediaDevices.audioinput[id].label || $_("audioDeviceNum", { values: { num: index + 1 } })}</option>
-			{/each}
-		</select>
-	</label>
-	<br />
-	<br />
-	<button on:click={setConfig}>{$_("shareVideoAudioDevice")}</button><br /><br />
-	<button on:click={stop}>{$_("stopSharing")}</button>
+<div class="container flex vertical">
+	{#if expanded}
+		<div class="flex">
+			<label for="videoDevice">{$_("videoDevice")}</label>
+			<select id="videoDevice" bind:value={selectedVideoDevice}>
+				<option value="default">{$_("defaultVideoDevice")}</option>
+				<option value="none">{$_("noVideo")}</option>
+				{#each Object.keys(mediaDevices.videoinput) as id, index}
+					<option value={id}>{mediaDevices.videoinput[id].label || $_("videoDeviceNum", { values: { num: index + 1 } })}</option>
+				{/each}
+			</select>
+			<button
+				class="close"
+				on:click={() => {
+					expanded = false;
+				}}>&times;</button
+			>
+		</div>
+		<div class="flex">
+			<label for="audioDevice">{$_("audioDevice")}</label>
+			<select id="audioDevice" bind:value={selectedAudioDevice}>
+				<option value="default">{$_("defaultAudioDevice")}</option>
+				<option value="none">{$_("noAudio")}</option>
+				{#each Object.keys(mediaDevices.audioinput) as id, index}
+					<option value={id}>{mediaDevices.audioinput[id].label || $_("audioDeviceNum", { values: { num: index + 1 } })}</option>
+				{/each}
+			</select>
+		</div>
+		<div class="flex">
+			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button><button on:click={setScreenConfig}>{$_("shareScreen")}</button>
+		</div>
+		<div>
+			<button on:click={stop}>{$_("stopSharing")}</button><br />
+		</div>
+		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
+	{:else}
+		<button
+			on:click={() => {
+				expanded = true;
+			}}>+</button
+		>
+	{/if}
 </div>
 
 <style>
-	div {
+	button,
+	select {
+		cursor: pointer;
+		border-radius: 0.25rem;
+		line-height: 1.5;
+		color: #000000;
+		background-color: transparent;
+		border: 1px solid #000000;
+		padding: 0.375rem 0.75rem;
+	}
+	select {
+		flex: 1 0;
+	}
+	button:hover {
+		color: #fff;
+		background-color: #000000;
+		border-color: #000000;
+	}
+	button.close {
+		margin-left: auto;
+		font-size: 18px;
+		padding: 0 0.5rem;
+	}
+	div.container {
 		border-radius: 10px;
 		padding: 10px;
 		border: 1px solid black;
 		background-color: white;
 		position: absolute;
 		z-index: 1;
+	}
+	div.flex {
+		display: flex;
+		align-items: baseline;
+		gap: 0.4rem;
+	}
+	div.flex.vertical {
+		flex-direction: column;
+		align-items: stretch;
 	}
 </style>
