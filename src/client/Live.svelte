@@ -1,4 +1,8 @@
-<div><span>&#9673;</span>live</div>
+<script lang="ts">
+	import { _ } from "svelte-i18n";
+</script>
+
+<div><span>&#9673;</span>{$_("live")}</div>
 
 <style>
 	@keyframes blink {

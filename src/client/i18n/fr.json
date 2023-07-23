@@ -1,0 +1,15 @@
+{
+	"audioDevice": "Périphérique audio:",
+	"audioDeviceNum": "Périphérique audio {num}",
+	"connecting": "Connexion...",
+	"defaultAudioDevice": "Par défaut",
+	"defaultVideoDevice": "Par défaut",
+	"live": "En direct",
+	"noAudio": "Pas de son",
+	"noVideo": "Pas de vidéo",
+	"shareScreen": "Partager l'écran",
+	"shareVideoAudioDevices": "Partager les périphériques vidéo/audio",
+	"stopSharing": "Arrêter de partager",
+	"videoDevice": "Périphérique vidéo:",
+	"videoDeviceNum": "Périphérique vidéo {num}"
+}

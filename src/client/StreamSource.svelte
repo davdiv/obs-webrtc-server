@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { _ } from "svelte-i18n";
 	import { ScreenConfig } from "./mediaDevices";
 	import type { Devices, StreamConfig } from "./mediaDevices";
 
@@ -41,33 +42,33 @@
 </script>
 
 <div>
-	<button on:click={setScreenConfig}>Share screen</button>
+	<button on:click={setScreenConfig}>{$_("shareScreen")}</button>
 	<br /><br />
 	<label>
-		Video device:
+		{$_("videoDevice")}
 		<select bind:value={selectedVideoDevice}>
-			<option value="default">Default</option>
-			<option value="none">No video</option>
+			<option value="default">{$_("defaultVideoDevice")}</option>
+			<option value="none">{$_("noVideo")}</option>
 			{#each Object.keys(mediaDevices.videoinput) as id, index}
-				<option value={id}>{mediaDevices.videoinput[id].label || `Video device ${index + 1}`}</option>
+				<option value={id}>{mediaDevices.videoinput[id].label || $_("videoDeviceNum", { values: { num: index + 1 } })}</option>
 			{/each}
 		</select>
 	</label>
 	<br />
 	<label
-		>Audio device:
+		>{$_("audioDevice")}
 		<select bind:value={selectedAudioDevice}>
-			<option value="default">Default</option>
-			<option value="none">No audio</option>
+			<option value="default">{$_("defaultAudioDevice")}</option>
+			<option value="none">{$_("noAudio")}</option>
 			{#each Object.keys(mediaDevices.audioinput) as id, index}
-				<option value={id}>{mediaDevices.audioinput[id].label || `Audio device ${index + 1}`}</option>
+				<option value={id}>{mediaDevices.audioinput[id].label || $_("audioDeviceNum", { values: { num: index + 1 } })}</option>
 			{/each}
 		</select>
 	</label>
 	<br />
 	<br />
-	<button on:click={setConfig}>Update</button>
-	<button on:click={stop}>Stop</button>
+	<button on:click={setConfig}>{$_("shareVideoAudioDevice")}</button><br /><br />
+	<button on:click={stop}>{$_("stopSharing")}</button>
 </div>
 
 <style>

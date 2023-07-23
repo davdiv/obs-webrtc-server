@@ -1,0 +1,15 @@
+{
+	"audioDevice": "Audio device:",
+	"audioDeviceNum": "Audio device {num}",
+	"connecting": "Connection...",
+	"defaultAudioDevice": "Default",
+	"defaultVideoDevice": "Default",
+	"live": "Live",
+	"noAudio": "No audio",
+	"noVideo": "No video",
+	"shareScreen": "Share screen",
+	"shareVideoAudioDevices": "Share video/audio devices",
+	"stopSharing": "Stop sharing",
+	"videoDevice": "Video device:",
+	"videoDeviceNum": "Video device {num}"
+}
