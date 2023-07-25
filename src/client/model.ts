@@ -16,7 +16,7 @@ export const createModel = () => {
 	url.protocol = url.protocol.replace(/^http/i, "ws");
 	url.hash = "";
 
-	const connected$ = writable(false);
+	const connected$ = writable(false as boolean | null);
 	const data$ = writable(undefined as ServerControlledData | undefined);
 	const peerConnection$ = writable(undefined as RTCPeerConnection | undefined);
 	const receiverStream$ = writable(null as MediaStream | null, { equal: Object.is });
@@ -161,12 +161,17 @@ export const createModel = () => {
 		const localSocket = new WebSocket(url.href, ["obs-webrtc-server"]);
 		socket = localSocket;
 		socketApi = undefined;
-		socket.addEventListener("close", async () => {
+		socket.addEventListener("close", async (event) => {
 			if (socket != localSocket) return;
 			closePeerConnection();
-			connected$.set(false);
 			data$.set(undefined);
 			remoteReceiverInfo$.set(undefined);
+			if (event.code === 3001) {
+				connected$.set(null);
+				return; // do not reconnect
+			} else {
+				connected$.set(false);
+			}
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 			createSocket();
 		});

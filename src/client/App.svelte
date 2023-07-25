@@ -7,7 +7,9 @@
 </script>
 
 {#if !$isLoading}
-	{#if !$connected$}
+	{#if $connected$ === null}
+		{$_("disconnected")}
+	{:else if !$connected$}
 		{$_("connecting")}
 	{:else if $data$?.type === "emitter"}
 		<Emitter />

@@ -139,7 +139,7 @@ export const createServer = async (config: ServerConfig, configFilePath: string)
 			}
 		}
 		if (!data) {
-			socket.close();
+			socket.close(3001);
 			return;
 		}
 		const id = createId();

@@ -4,6 +4,7 @@
 	"connecting": "Connexion...",
 	"defaultAudioDevice": "Par défaut",
 	"defaultVideoDevice": "Par défaut",
+	"disconnected": "Déconnecté!",
 	"live": "En direct",
 	"noAudio": "Pas de son",
 	"noVideo": "Pas de vidéo",
