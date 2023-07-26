@@ -88,23 +88,8 @@
 </div>
 
 <style>
-	button,
-	select {
-		cursor: pointer;
-		border-radius: 0.25rem;
-		line-height: 1.5;
-		color: #000000;
-		background-color: transparent;
-		border: 1px solid #000000;
-		padding: 0.375rem 0.75rem;
-	}
 	select {
 		flex: 1 0;
-	}
-	button:hover {
-		color: #fff;
-		background-color: #000000;
-		border-color: #000000;
 	}
 	button.close {
 		margin-left: auto;
@@ -112,10 +97,14 @@
 		padding: 0 0.5rem;
 	}
 	div.container {
+		position: absolute;
+		left: 10px;
+		top: 10px;
 		border-radius: 10px;
 		padding: 10px;
 		border: 1px solid black;
 		background-color: white;
+		color: black;
 		position: absolute;
 		z-index: 1;
 	}

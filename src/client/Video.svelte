@@ -15,19 +15,5 @@
 
 {#if stream}
 	<!-- svelte-ignore a11y-media-has-caption -->
-	<video use:videoSource={stream} autoplay playsinline {muted} />
-{:else}
-	<div />
+	<video class="fullscreen" use:videoSource={stream} autoplay playsinline {muted} />
 {/if}
-
-<style>
-	video,
-	div {
-		position: absolute;
-		left: 0;
-		top: 0;
-		width: 100%;
-		height: 100%;
-		background-color: black;
-	}
-</style>

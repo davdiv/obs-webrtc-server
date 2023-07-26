@@ -53,8 +53,8 @@
 		"build:server": "vite build -c vite.server.config.ts",
 		"build:svelte-check": "svelte-check",
 		"dev": "vite build -c vite.server.config.ts --watch -m development",
-		"format:check": "prettier '{**/*,*}.{ts,js,json,yml,svelte,html,md}' --list-different",
-		"format:fix": "prettier '{**/*,*}.{ts,js,json,yml,svelte,html,md}' --write",
+		"format:check": "prettier '{**/*,*}.{ts,js,json,yml,svelte,html,css,md}' --list-different",
+		"format:fix": "prettier '{**/*,*}.{ts,js,json,yml,svelte,html,css,md}' --write",
 		"lint": "eslint .",
 		"start": "nodemon --watch dist/obs-webrtc-server dist/obs-webrtc-server"
 	},
