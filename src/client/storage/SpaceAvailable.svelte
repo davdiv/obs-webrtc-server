@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { _ } from "svelte-i18n";
-	import { spaceAvailable$, refreshStorageFiles } from "./browserStorage";
+	import { spaceAvailable$, refreshStorageFiles, persisted$, requestPersistentStorage } from "./browserStorage";
 
 	const formatSize = (size: number, $t: typeof $_) => {
 		if (size > 1000000000) {
@@ -26,5 +26,10 @@
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<div on:click={refreshStorageFiles}>
 		{$_("spaceAvailable", { values })}
+	</div>
+	<!-- svelte-ignore a11y-no-static-element-interactions -->
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div on:click={requestPersistentStorage}>
+		({$persisted$ ? $_("persistentStorage") : $_("volatileStorage")})
 	</div>
 {/if}

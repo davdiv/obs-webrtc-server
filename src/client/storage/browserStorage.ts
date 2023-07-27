@@ -18,6 +18,12 @@ export const spaceAvailable$ = asyncSerialDerived(refresh$, {
 	},
 });
 
+export const persisted$ = asyncSerialDerived(refresh$, {
+	async derive(unused, set: OnUseArgument<boolean | undefined>) {
+		set(await navigator.storage.persisted());
+	},
+});
+
 const getFiles = async (signal: AbortSignal) => {
 	const directory = await navigator.storage.getDirectory();
 	const files: FileSystemFileHandle[] = [];
@@ -40,5 +46,10 @@ export const saveFile = async (fileHandle: FileSystemFileHandle) => {
 export const removeFile = async (fileHandle: FileSystemFileHandle) => {
 	const directory = await navigator.storage.getDirectory();
 	await directory.removeEntry(fileHandle.name);
+	refreshStorageFiles();
+};
+
+export const requestPersistentStorage = async () => {
+	await navigator.storage.persist();
 	refreshStorageFiles();
 };

@@ -12,11 +12,13 @@
 	"megabyte": "{size} Mo",
 	"noAudio": "Pas de son",
 	"noVideo": "Pas de vidéo",
+	"persistentStorage": "Stockage persistant",
 	"record": "Enregistrer sur cet appareil",
 	"shareScreen": "Partager l'écran",
 	"shareVideoAudioDevices": "Partager les périphériques vidéo/audio",
 	"spaceAvailable": "{usage} utilisés / {quota} disponibles",
 	"stopSharing": "Arrêter de partager",
 	"videoDevice": "Périphérique vidéo:",
-	"videoDeviceNum": "Périphérique vidéo {num}"
+	"videoDeviceNum": "Périphérique vidéo {num}",
+	"volatileStorage": "Stockage volatil"
 }

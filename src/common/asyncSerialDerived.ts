@@ -28,7 +28,6 @@ export function asyncSerialDerived<T, S extends StoresInput>(
 			store,
 			{
 				derive: (value, set) => {
-					set(initialValue as T);
 					const abortController = new AbortController();
 					currentOperation = currentOperation.then(async () => {
 						try {
