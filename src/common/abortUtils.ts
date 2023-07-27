@@ -24,3 +24,8 @@ export const checkAbortSignal = (abortSignal: AbortSignal) => {
 };
 
 export const isAbortError = (error: any) => error instanceof AbortError || error.name === "AbortError";
+
+export const subAbortController = (abortSignal: AbortSignal, subAbortController: AbortController) => {
+	const removeListener = onAbort(abortSignal, () => subAbortController.abort());
+	onAbort(subAbortController.signal, removeListener);
+};

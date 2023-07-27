@@ -1,6 +1,6 @@
 import { asReadable, writable, type ReadableSignal } from "@amadeus-it-group/tansu";
 import { asyncSerialDerived } from "../common/asyncSerialDerived";
-import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
+import { checkAbortSignal, subAbortController, waitAbortSignal } from "../common/abortUtils";
 import deepEqual from "fast-deep-equal";
 
 export type Devices = {
@@ -51,7 +51,10 @@ export const deriveStream = (streamConfig: ReadableSignal<StreamConfig>) =>
 			checkAbortSignal(abortSignal);
 			refresh();
 			set(result);
-			await waitAbortSignal(abortSignal);
+			const abortController = new AbortController();
+			subAbortController(abortSignal, abortController);
+			result.getTracks().forEach((track) => track.addEventListener("ended", () => abortController.abort()));
+			await waitAbortSignal(abortController.signal);
 			set(null);
 			result.getTracks().forEach((track) => track.stop());
 		},

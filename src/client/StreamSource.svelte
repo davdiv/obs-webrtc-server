@@ -6,7 +6,7 @@
 	export let mediaConstraints: MediaStreamConstraints | undefined;
 	export let mediaDevices: Devices;
 	export let streamConfig: StreamConfig;
-	export let expanded = true;
+	export let stream: MediaStream | null = null;
 
 	let selectedVideoDevice = mediaConstraints?.video === false ? "none" : "default";
 	let selectedAudioDevice = mediaConstraints?.audio === false ? "none" : "default";
@@ -24,7 +24,6 @@
 				configType.deviceId = selection;
 			}
 		}
-		expanded = false;
 	};
 
 	const setConfig = () => {
@@ -44,7 +43,7 @@
 </script>
 
 <div class="container flex vertical">
-	{#if expanded}
+	{#if !stream}
 		<div class="flex">
 			<label for="videoDevice">{$_("videoDevice")}</label>
 			<select id="videoDevice" bind:value={selectedVideoDevice}>
@@ -54,12 +53,6 @@
 					<option value={id}>{mediaDevices.videoinput[id].label || $_("videoDeviceNum", { values: { num: index + 1 } })}</option>
 				{/each}
 			</select>
-			<button
-				class="close"
-				on:click={() => {
-					expanded = false;
-				}}>&times;</button
-			>
 		</div>
 		<div class="flex">
 			<label for="audioDevice">{$_("audioDevice")}</label>
@@ -74,27 +67,15 @@
 		<div class="flex">
 			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button><button on:click={setScreenConfig}>{$_("shareScreen")}</button>
 		</div>
-		<div>
-			<button on:click={stop}>{$_("stopSharing")}</button><br />
-		</div>
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
 	{:else}
-		<button
-			on:click={() => {
-				expanded = true;
-			}}>+</button
-		>
+		<button on:click={stop}>{$_("stopSharing")}</button>
 	{/if}
 </div>
 
 <style>
 	select {
 		flex: 1 0;
-	}
-	button.close {
-		margin-left: auto;
-		font-size: 18px;
-		padding: 0 0.5rem;
 	}
 	div.container {
 		position: absolute;
@@ -105,7 +86,6 @@
 		border: 1px solid black;
 		background-color: white;
 		color: black;
-		position: absolute;
 		z-index: 1;
 	}
 	div.flex {

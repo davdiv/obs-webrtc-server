@@ -11,4 +11,4 @@
 	$: stream = $videoStream$;
 </script>
 
-<StreamSource mediaDevices={$mediaDevices$} {mediaConstraints} bind:streamConfig={$streamConfig$} />
+<StreamSource mediaDevices={$mediaDevices$} {mediaConstraints} bind:streamConfig={$streamConfig$} {stream} />
