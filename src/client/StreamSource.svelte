@@ -2,11 +2,13 @@
 	import { _ } from "svelte-i18n";
 	import { ScreenConfig } from "./mediaDevices";
 	import type { Devices, StreamConfig } from "./mediaDevices";
+	import SpaceAvailable from "./storage/SpaceAvailable.svelte";
 
 	export let mediaConstraints: MediaStreamConstraints | undefined;
 	export let mediaDevices: Devices;
 	export let streamConfig: StreamConfig;
 	export let stream: MediaStream | null = null;
+	export let record: boolean;
 
 	let selectedVideoDevice = mediaConstraints?.video === false ? "none" : "default";
 	let selectedAudioDevice = mediaConstraints?.audio === false ? "none" : "default";
@@ -64,12 +66,22 @@
 				{/each}
 			</select>
 		</div>
+		<div>
+			<input id="record" type="checkbox" bind:checked={record} />
+			<label for="record">{$_("record")}</label>
+		</div>
+		{#if record}
+			<SpaceAvailable />
+		{/if}
 		<div class="flex">
 			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button><button on:click={setScreenConfig}>{$_("shareScreen")}</button>
 		</div>
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
 	{:else}
 		<button on:click={stop}>{$_("stopSharing")}</button>
+		{#if record}
+			<SpaceAvailable />
+		{/if}
 	{/if}
 </div>
 
@@ -87,14 +99,5 @@
 		background-color: white;
 		color: black;
 		z-index: 1;
-	}
-	div.flex {
-		display: flex;
-		align-items: baseline;
-		gap: 0.4rem;
-	}
-	div.flex.vertical {
-		flex-direction: column;
-		align-items: stretch;
 	}
 </style>

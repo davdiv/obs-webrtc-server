@@ -29,3 +29,14 @@ button:hover {
 	background-color: black;
 	border-color: black;
 }
+
+.flex {
+	display: flex;
+	align-items: baseline;
+	gap: 0.4rem;
+}
+
+.flex.vertical {
+	flex-direction: column;
+	align-items: stretch;
+}

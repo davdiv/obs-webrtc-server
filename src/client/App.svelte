@@ -4,7 +4,8 @@
 	import Receiver from "./Receiver.svelte";
 	import { model } from "./model";
 	import FullScreenInfo from "./FullScreenInfo.svelte";
-	const { connected$, data$ } = model;
+	import StoredFilesList from "./storage/StoredFilesList.svelte";
+	const { connected$, data$, emitterStream$ } = model;
 </script>
 
 {#if !$isLoading}
@@ -14,6 +15,9 @@
 		<FullScreenInfo>{$_("connecting")}</FullScreenInfo>
 	{:else if $data$?.type === "emitter"}
 		<Emitter />
+		{#if !$emitterStream$}
+			<StoredFilesList />
+		{/if}
 	{:else if $data$?.type === "receiver"}
 		<Receiver />
 	{/if}

@@ -2,7 +2,8 @@ import { asReadable, computed, derived, writable } from "@amadeus-it-group/tansu
 import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
 import type { ReceiverInfo, RpcClientInterface, RpcServerInterface, ServerControlledData } from "../common/rpcInterface";
 import { websocketJsonRpc } from "./websocketJsonRpc";
-import { record } from "./recorder";
+import { record } from "./recordUpload";
+import { recordInBrowserStorage } from "./storage/recordInBrowserStorage";
 
 const obsSourceActive$ = writable(false);
 if (window.obsstudio) {
@@ -16,6 +17,7 @@ export const createModel = () => {
 	url.protocol = url.protocol.replace(/^http/i, "ws");
 	url.hash = "";
 
+	const recordLocally$ = writable(true);
 	const connected$ = writable(false as boolean | null);
 	const data$ = writable(undefined as ServerControlledData | undefined);
 	const peerConnection$ = writable(undefined as RTCPeerConnection | undefined);
@@ -33,6 +35,15 @@ export const createModel = () => {
 		const hasVideo = (emitterStream?.getVideoTracks()?.length ?? 0) > 0;
 		return { hasAudio, hasVideo };
 	});
+	const recordEmitterStreamAction$ = derived(
+		[emitterStream$, recordLocally$],
+		([stream, recordLocally], set) => {
+			if (stream && recordLocally) {
+				return recordInBrowserStorage(stream);
+			}
+		},
+		undefined,
+	);
 	const updateTracksAction$ = computed(() => {
 		if (data$()?.type === "emitter") {
 			const peerConnection = peerConnection$();
@@ -79,6 +90,7 @@ export const createModel = () => {
 	const actions$ = computed(() => {
 		updateTracksAction$();
 		sendDataAction$();
+		recordEmitterStreamAction$();
 	});
 	actions$.subscribe(() => {});
 
@@ -191,6 +203,7 @@ export const createModel = () => {
 		emitterStream$,
 		receiverStream$: asReadable(receiverStream$),
 		remoteReceiverInfo$: asReadable(remoteReceiverInfo$),
+		recordLocally$,
 	};
 };
 
