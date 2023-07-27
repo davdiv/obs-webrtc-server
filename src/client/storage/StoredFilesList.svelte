@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { _ } from "svelte-i18n";
 	import { browserStorageFiles, saveFile, removeFile } from "./browserStorage";
 </script>
 
@@ -7,8 +8,8 @@
 		{#each $browserStorageFiles as file}
 			<div>
 				{file.name}
-				<button on:click={() => saveFile(file)}>Save</button>
-				<button on:click={() => removeFile(file)}>Delete</button>
+				<button on:click={() => saveFile(file)}>{$_("save")}</button>
+				<button on:click={() => removeFile(file)}>{$_("delete")}</button>
 			</div>
 		{/each}
 	</div>
