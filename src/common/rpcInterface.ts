@@ -5,15 +5,16 @@ export interface ServerSentEmitterInfo extends ReceiverToEmitterInfo {
 	mediaConstraints?: MediaStreamConstraints;
 }
 
-export interface ServerSentReceiverInfo {
+export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
 	type: "receiver";
 	recordURL?: string;
 	recordOptions?: MediaRecorderOptions;
+	targetDelay?: number;
 }
 
 export type ClientSentInfo = ClientSentEmitterInfo | ClientSentReceiverInfo | undefined;
 
-export interface ClientSentEmitterInfo {
+export interface ClientSentEmitterInfo extends EmitterToReceiverInfo {
 	streamInfo?: StreamInfo;
 }
 
@@ -21,6 +22,10 @@ export interface ClientSentReceiverInfo extends ReceiverToEmitterInfo {}
 
 export interface ReceiverToEmitterInfo {
 	obsActive?: boolean;
+}
+
+export interface EmitterToReceiverInfo {
+	roundTripTime?: number;
 }
 
 export interface StreamInfo {

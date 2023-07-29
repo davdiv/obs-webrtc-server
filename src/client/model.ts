@@ -1,10 +1,12 @@
 import { asReadable, computed, derived, writable } from "@amadeus-it-group/tansu";
+import fastDeepEqual from "fast-deep-equal";
 import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
 import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
-import { websocketJsonRpc } from "./websocketJsonRpc";
 import { record } from "./recordUpload";
+import { createRtcStatsModel } from "./rtcStats";
 import { recordInBrowserStorage } from "./storage/recordInBrowserStorage";
-import fastDeepEqual from "fast-deep-equal";
+import { websocketJsonRpc } from "./websocketJsonRpc";
+import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
 
 const obsSourceActive$ = writable(false);
 if (window.obsstudio) {
@@ -18,6 +20,9 @@ if (window.obsstudio) {
 		},
 	} as any;
 }
+
+const computeDelay = (captureDelay: number | undefined, timestampDiff: number | undefined, roundTripTime: number | undefined) =>
+	captureDelay != null && timestampDiff != null && roundTripTime != null ? captureDelay - timestampDiff + roundTripTime / 2 : undefined;
 
 export const createModel = () => {
 	const url = new URL(window.location.href);
@@ -42,12 +47,28 @@ export const createModel = () => {
 		if (emitterOrReceiver === "emitter") {
 			return {
 				streamInfo: emitterStreamInfo$(),
+				roundTripTime: rtcStats.roundTripTime$(),
 			} satisfies ClientSentEmitterInfo;
 		} else if (emitterOrReceiver === "receiver") {
 			return {
 				obsActive: obsSourceActive$(),
 			} satisfies ClientSentReceiverInfo;
 		}
+	});
+	const roundTripTime$ = computed(() => receiverData$()?.roundTripTime);
+	const targetDelay$ = computed(() => receiverData$()?.targetDelay);
+	const audioDelay$ = computed(() => computeDelay(rtcStats.audio.captureDelay$(), rtcStats.timestampDiff$(), roundTripTime$()));
+	const videoDelay$ = computed(() => computeDelay(rtcStats.video.captureDelay$(), rtcStats.timestampDiff$(), roundTripTime$()));
+	const delayDiff$ = computed(() => {
+		const targetDelay = targetDelay$();
+		if (targetDelay != null) {
+			const measuredDelay = audioDelay$() ?? videoDelay$();
+			if (measuredDelay != null) {
+				const diffDelay = (targetDelay - measuredDelay) / 1000;
+				return Math.abs(diffDelay) < 0.01 ? 0 : diffDelay;
+			}
+		}
+		return 0;
 	});
 
 	const createSocket = () => {
@@ -95,6 +116,21 @@ export const createModel = () => {
 		},
 		undefined,
 	);
+	const applyPlayoutDelayHintAction$ = computed(() => {
+		const audioReceiver = rtcStats.audio.receiver$();
+		const videoReceiver = rtcStats.video.receiver$();
+		const delayDiff = delayDiff$();
+		if (delayDiff != 0) {
+			const existingDelay = (audioReceiver ?? (videoReceiver as any))?.playoutDelayHint ?? 0;
+			const targetDelay = Math.max(0, existingDelay + delayDiff);
+			if (audioReceiver) {
+				(audioReceiver as any).playoutDelayHint = targetDelay;
+			}
+			if (videoReceiver) {
+				(videoReceiver as any).playoutDelayHint = targetDelay;
+			}
+		}
+	});
 	const updateTracksAction$ = computed(() => {
 		if (emitterOrReceiver$() === "emitter") {
 			const peerConnection = peerConnection$();
@@ -109,6 +145,7 @@ export const createModel = () => {
 						peerConnection.addTrack(track, emitterStream);
 					}
 				}
+				addCaptureTimeToRTCConnection(peerConnection);
 			}
 		}
 	});
@@ -123,10 +160,10 @@ export const createModel = () => {
 	);
 	const actions$ = computed(() => {
 		updateTracksAction$();
+		applyPlayoutDelayHintAction$();
 		recordStreamAction$();
 		recordEmitterStreamAction$();
 	});
-	actions$.subscribe(() => {});
 
 	const checkSameConnection = (connection: RTCPeerConnection) => {
 		if (peerConnection$() !== connection) throw new Error("Interrupted");
@@ -165,9 +202,17 @@ export const createModel = () => {
 			const connection = peerConnection$()!;
 			console.log("createOffer");
 			const offer = await connection.createOffer();
+			const initialSdp = offer.sdp;
+			offer.sdp = addCaptureTimeToSdp(offer.sdp!);
 			checkSameConnection(connection);
 			console.log("setLocalDescription");
-			await connection.setLocalDescription(offer);
+			try {
+				await connection.setLocalDescription(offer);
+			} catch (error) {
+				checkSameConnection(connection);
+				offer.sdp = initialSdp;
+				await connection.setLocalDescription(offer);
+			}
 			checkSameConnection(connection);
 			return offer;
 		},
@@ -193,7 +238,10 @@ export const createModel = () => {
 		},
 	};
 
+	const rtcStats = createRtcStatsModel(peerConnection$);
 	createSocket();
+
+	actions$.subscribe(() => {});
 
 	return {
 		emitterOrReceiver$,

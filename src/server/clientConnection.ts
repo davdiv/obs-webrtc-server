@@ -9,6 +9,7 @@ import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
 import type {
 	ClientSentEmitterInfo,
 	ClientSentReceiverInfo,
+	EmitterToReceiverInfo,
 	ReceiverToEmitterInfo,
 	RpcClientInterface,
 	RpcServerInterface,
@@ -30,6 +31,7 @@ interface BaseClientConnection {
 
 interface EmitterClientConnection extends BaseClientConnection {
 	remoteConnection$: WritableSignal<ReceiverClientConnection | undefined>;
+	emitterToReceiverInfo$: ReadableSignal<EmitterToReceiverInfo | undefined>;
 	streamInfo$: ReadableSignal<StreamInfo | undefined>;
 	api: CallMethod<RpcClientInterface, ClientSentEmitterInfo>;
 }
@@ -41,7 +43,7 @@ interface ReceiverClientConnection extends BaseClientConnection {
 }
 
 export const createClientsManager = (
-	config: Pick<ServerConfig, "receiverPrefix" | "emitterPaths" | "mediaConstraints" | "rtcConfiguration" | "recordOptions">,
+	config: Pick<ServerConfig, "receiverPrefix" | "emitterPaths" | "mediaConstraints" | "rtcConfiguration" | "recordOptions" | "targetDelay">,
 	obs: ReturnType<typeof obsManager>,
 	recorder: ReturnType<typeof recordingManager>,
 ) => {
@@ -71,6 +73,14 @@ export const createClientsManager = (
 			id,
 			remoteConnection$: writable(undefined),
 			streamInfo$: computed((): StreamInfo | undefined => connection.api.data$()?.streamInfo, { equal: deepEqual }),
+			emitterToReceiverInfo$: computed((): EmitterToReceiverInfo | undefined => {
+				const data = connection.api.data$();
+				if (data) {
+					return {
+						roundTripTime: data.roundTripTime,
+					};
+				}
+			}),
 			socket,
 			api: null as any,
 		};
@@ -114,6 +124,8 @@ export const createClientsManager = (
 				type: "receiver",
 				recordOptions: config.recordOptions,
 				recordURL,
+				targetDelay: config.targetDelay,
+				...emitter.emitterToReceiverInfo$(),
 			};
 		});
 		connection.api = websocketJsonRpc<RpcClientInterface, RpcServerInterface, ClientSentReceiverInfo, ServerSentReceiverInfo>(
