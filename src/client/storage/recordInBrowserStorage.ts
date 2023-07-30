@@ -16,7 +16,7 @@ export const recordInBrowserStorage = (stream: MediaStream, options?: MediaRecor
 		});
 	});
 	const startTime = new Date().toISOString();
-	const fileName = `${startTime.replace(/[:.]/g, "-")}.webm`;
+	const fileName = `${startTime.replace(/[-:.]/g, "")}.webm`;
 	let writableStream: Promise<FileSystemWritableFileStream> = (async () => {
 		const directory = await navigator.storage.getDirectory();
 		const fileHandle = await directory.getFileHandle(fileName, { create: true });
