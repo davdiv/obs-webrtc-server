@@ -74,7 +74,7 @@
 			<SpaceAvailable />
 		{/if}
 		<div class="flex">
-			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button><button on:click={setScreenConfig}>{$_("shareScreen")}</button>
+			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button>{#if !!navigator.mediaDevices.getDisplayMedia}<button on:click={setScreenConfig}>{$_("shareScreen")}</button>{/if}
 		</div>
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
 	{:else}
