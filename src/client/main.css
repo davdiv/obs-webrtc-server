@@ -13,6 +13,11 @@ body,
 	overflow: hidden;
 }
 
+svg {
+	width: 1em;
+	height: 1em;
+}
+
 button,
 select {
 	cursor: pointer;
@@ -32,11 +37,40 @@ button:hover {
 
 .flex {
 	display: flex;
-	align-items: baseline;
+	align-items: center;
 	gap: 0.4rem;
 }
 
 .flex.vertical {
 	flex-direction: column;
 	align-items: stretch;
+}
+
+@keyframes blink {
+	0% {
+		opacity: 1;
+	}
+	40% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
+div.rec-live {
+	border-radius: 0.5em;
+	background-color: red;
+	font-weight: bold;
+	font-variant-caps: small-caps;
+	color: white;
+	padding: 0.5em;
+	margin: 0.5em;
+}
+
+div.rec-live svg {
+	animation-duration: 2s;
+	animation-name: blink;
+	animation-iteration-count: infinite;
+	transition: none;
 }

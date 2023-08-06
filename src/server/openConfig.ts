@@ -17,6 +17,7 @@ const defaultConfig = (): ServerConfig => {
 		recordPrefix: `/${createId()}/`,
 		recordingsFolder: "./recordings/",
 		emitterPaths: [`/${createId()}/`],
+		adminPaths: [`/${createId()}/`],
 		listenPort: 8080,
 		mediaConstraints: {
 			audio: true,

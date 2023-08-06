@@ -97,6 +97,9 @@ export const createServer = async (config: ServerConfig, configFilePath: string)
 	const baseURL = `https://${config.listenHost ?? "localhost"}:${address.port}`;
 	const obsPrefix = `http://${config.listenHost ?? "localhost"}:${address.port}${config.receiverPrefix}`;
 	console.log(`Listening on ${baseURL}`);
+	for (const adminPath of config.adminPaths ?? []) {
+		console.log(`Admin URL: ${baseURL}${adminPath}`);
+	}
 	for (const emitterPath of config.emitterPaths ?? []) {
 		console.log(`Emitter URL: ${baseURL}${emitterPath}`);
 	}

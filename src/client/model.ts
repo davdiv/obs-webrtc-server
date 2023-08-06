@@ -1,12 +1,17 @@
+import type { OnUseArgument } from "@amadeus-it-group/tansu";
 import { asReadable, computed, derived, writable } from "@amadeus-it-group/tansu";
 import fastDeepEqual from "fast-deep-equal";
 import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
-import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
+import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, Resolution, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
+import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
 import { record } from "./recordUpload";
 import { createRtcStatsModel } from "./rtcStats";
+import { storageInfo$ } from "./storage/browserStorage";
 import { recordInBrowserStorage } from "./storage/recordInBrowserStorage";
 import { websocketJsonRpc } from "./websocketJsonRpc";
-import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
+import { batteryInfo$ } from "./battery/battery";
+import { asyncSerialDerived } from "../common/asyncSerialDerived";
+import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
 
 const obsSourceActive$ = writable(false);
 if (window.obsstudio) {
@@ -29,28 +34,35 @@ export const createModel = () => {
 	url.protocol = url.protocol.replace(/^http/i, "ws");
 	url.hash = "";
 
-	let socket: WebSocket;
-	const socketApi$ = writable(undefined as CallMethod<RpcServerInterface, ServerSentInfo> | undefined);
-	const connected$ = writable(false as boolean | null);
 	const data$ = computed(() => socketApi$()?.data$());
-	const emitterOrReceiver$ = computed(() => data$()?.type);
+	const mode$ = computed(() => data$()?.mode);
 	const emitterData$ = computed(() => {
 		const data = data$();
-		return data?.type === "emitter" ? data : undefined;
+		return data?.mode === "emitter" ? data : undefined;
 	});
 	const receiverData$ = computed(() => {
 		const data = data$();
-		return data?.type === "receiver" ? data : undefined;
+		return data?.mode === "receiver" ? data : undefined;
+	});
+	const adminData$ = computed(() => {
+		const data = data$();
+		return data?.mode === "admin" ? data : undefined;
 	});
 	const clientSentInfo$ = computed((): ClientSentInfo => {
-		const emitterOrReceiver = emitterOrReceiver$();
-		if (emitterOrReceiver === "emitter") {
+		const mode = mode$();
+		if (mode === "emitter") {
 			return {
 				streamInfo: emitterStreamInfo$(),
 				roundTripTime: rtcStats.roundTripTime$(),
+				videoResolution: emitterStreamResolution$(),
+				storageInfo: storageInfo$(),
+				batteryInfo: batteryInfo$(),
+				recording: recordEmitterStreamAction$(),
 			} satisfies ClientSentEmitterInfo;
-		} else if (emitterOrReceiver === "receiver") {
+		} else if (mode === "receiver") {
 			return {
+				audioDelay: audioDelay$(),
+				videoDelay: videoDelay$(),
 				obsActive: obsSourceActive$(),
 			} satisfies ClientSentReceiverInfo;
 		}
@@ -71,30 +83,39 @@ export const createModel = () => {
 		return 0;
 	});
 
-	const createSocket = () => {
-		console.log("Creating new websocket");
-		const localSocket = new WebSocket(url.href, ["obs-webrtc-server"]);
-		socket = localSocket;
-		socketApi$.set(undefined);
-		localSocket.addEventListener("close", async (event) => {
-			if (socket != localSocket) return;
-			closePeerConnection();
-			if (event.code === 3001) {
-				connected$.set(null);
-				return; // do not reconnect
-			} else {
-				connected$.set(false);
+	const needNewSocket$ = writable({} as null | object);
+	const socketApi$ = asyncSerialDerived([needNewSocket$], {
+		async derive(object, set: OnUseArgument<CallMethod<RpcServerInterface, ServerSentInfo> | undefined>, abortSignal) {
+			if (!object) {
+				return;
 			}
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			createSocket();
-		});
-		localSocket.addEventListener("open", async () => {
-			if (socket != localSocket) return;
-			console.log("Socket connected");
-			connected$.set(true);
-			socketApi$.set(websocketJsonRpc<RpcServerInterface, RpcClientInterface, ServerSentInfo, ClientSentInfo>(socket, rpcApi, clientSentInfo$));
-		});
-	};
+			const socket = new WebSocket(url.href, ["obs-webrtc-server"]);
+			socket.addEventListener("close", (event) => {
+				if (abortSignal.aborted) return;
+				if (event.code === 3001) {
+					// do not reconnect
+					needNewSocket$.set(null);
+				} else {
+					needNewSocket$.set({});
+				}
+			});
+			set(undefined);
+			try {
+				const abortedPromise = waitAbortSignal(abortSignal);
+				const openPromise = new Promise((resolve) => socket.addEventListener("open", resolve));
+				await Promise.race([abortedPromise, openPromise]);
+				checkAbortSignal(abortSignal);
+				set(websocketJsonRpc<RpcServerInterface, RpcClientInterface, ServerSentInfo, ClientSentInfo>(socket, rpcApi, clientSentInfo$));
+				await abortedPromise;
+			} finally {
+				set(undefined);
+				socket.close();
+				closePeerConnection();
+				await new Promise((resolve) => setTimeout(resolve, 1000));
+			}
+		},
+	});
+	const connected$ = computed(() => (socketApi$() ? true : needNewSocket$() ? false : null));
 
 	const recordLocally$ = writable(true);
 	const peerConnection$ = writable(undefined as RTCPeerConnection | undefined, { equal: Object.is });
@@ -103,18 +124,37 @@ export const createModel = () => {
 	const emitterStream$ = writable(null as MediaStream | null);
 	const emitterStreamInfo$ = computed(() => {
 		const emitterStream = emitterStream$();
-		const hasAudio = (emitterStream?.getAudioTracks()?.length ?? 0) > 0;
-		const hasVideo = (emitterStream?.getVideoTracks()?.length ?? 0) > 0;
+		const hasAudio = (emitterStream?.getAudioTracks().length ?? 0) > 0;
+		const hasVideo = (emitterStream?.getVideoTracks().length ?? 0) > 0;
 		return { hasAudio, hasVideo };
 	});
+	const resolutionRefresh$ = writable({});
+	const updateResolution = () => {
+		resolutionRefresh$.set({});
+	};
+	const emitterStreamResolution$ = computed(
+		(): Resolution | undefined => {
+			const emitterStream = emitterStream$();
+			const videoStream = emitterStream?.getVideoTracks()[0];
+			if (videoStream) {
+				resolutionRefresh$();
+				const settings = videoStream.getSettings();
+				return { width: settings.width!, height: settings.height! };
+			}
+			return undefined;
+		},
+		{ equal: fastDeepEqual },
+	);
 	const recordEmitterStreamAction$ = derived(
 		[emitterStream$, recordLocally$],
 		([stream, recordLocally], set) => {
 			if (stream && recordLocally) {
+				set(true);
 				return recordInBrowserStorage(stream);
 			}
+			set(false);
 		},
-		undefined,
+		false,
 	);
 	const applyPlayoutDelayHintAction$ = computed(() => {
 		const audioReceiver = rtcStats.audio.receiver$();
@@ -132,7 +172,7 @@ export const createModel = () => {
 		}
 	});
 	const updateTracksAction$ = computed(() => {
-		if (emitterOrReceiver$() === "emitter") {
+		if (mode$() === "emitter") {
 			const peerConnection = peerConnection$();
 			if (peerConnection) {
 				const tracks = peerConnection.getSenders();
@@ -159,6 +199,7 @@ export const createModel = () => {
 		undefined,
 	);
 	const actions$ = computed(() => {
+		socketApi$();
 		updateTracksAction$();
 		applyPlayoutDelayHintAction$();
 		recordStreamAction$();
@@ -239,18 +280,29 @@ export const createModel = () => {
 	};
 
 	const rtcStats = createRtcStatsModel(peerConnection$);
-	createSocket();
 
-	actions$.subscribe(() => {});
+	const unsubscribeActions = actions$.subscribe(() => {});
+
+	if (import.meta.hot) {
+		import.meta.hot.dispose(() => {
+			needNewSocket$.set(null);
+			unsubscribeActions();
+		});
+		import.meta.hot.accept(() => {
+			import.meta.hot!.invalidate();
+		});
+	}
 
 	return {
-		emitterOrReceiver$,
+		mode$,
 		emitterData$,
 		receiverData$,
+		adminData$,
 		connected$: asReadable(connected$),
 		emitterStream$,
 		receiverStream$: asReadable(receiverStream$),
 		recordLocally$,
+		updateResolution,
 	};
 };
 

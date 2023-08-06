@@ -15,5 +15,5 @@
 
 {#if stream}
 	<!-- svelte-ignore a11y-media-has-caption -->
-	<video class="fullscreen" use:videoSource={stream} autoplay playsinline {muted} />
+	<video class="fullscreen" use:videoSource={stream} autoplay playsinline {muted} on:resize />
 {/if}

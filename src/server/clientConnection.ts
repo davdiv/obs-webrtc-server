@@ -9,10 +9,12 @@ import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
 import type {
 	ClientSentEmitterInfo,
 	ClientSentReceiverInfo,
+	EmitterAdminInfo,
 	EmitterToReceiverInfo,
 	ReceiverToEmitterInfo,
 	RpcClientInterface,
 	RpcServerInterface,
+	ServerSentAdminInfo,
 	ServerSentEmitterInfo,
 	ServerSentReceiverInfo,
 	StreamInfo,
@@ -21,18 +23,21 @@ import { storeMap } from "../common/storeMap";
 import type { ServerConfig } from "./config";
 import type { obsManager } from "./obs";
 import type { recordingManager } from "./recorder";
-import { createId } from "./utils/createId";
+import { createId, hashId } from "./utils/createId";
 import { websocketJsonRpc } from "./websocketJsonRpc";
 
 interface BaseClientConnection {
 	id: string;
+	ip: string;
 	socket: WebSocket;
 }
 
 interface EmitterClientConnection extends BaseClientConnection {
+	hashId: string;
 	remoteConnection$: WritableSignal<ReceiverClientConnection | undefined>;
 	emitterToReceiverInfo$: ReadableSignal<EmitterToReceiverInfo | undefined>;
 	streamInfo$: ReadableSignal<StreamInfo | undefined>;
+	adminInfo$: ReadableSignal<EmitterAdminInfo>;
 	api: CallMethod<RpcClientInterface, ClientSentEmitterInfo>;
 }
 
@@ -43,7 +48,7 @@ interface ReceiverClientConnection extends BaseClientConnection {
 }
 
 export const createClientsManager = (
-	config: Pick<ServerConfig, "receiverPrefix" | "emitterPaths" | "mediaConstraints" | "rtcConfiguration" | "recordOptions" | "targetDelay">,
+	config: Pick<ServerConfig, "receiverPrefix" | "emitterPaths" | "adminPaths" | "mediaConstraints" | "rtcConfiguration" | "recordOptions" | "targetDelay">,
 	obs: ReturnType<typeof obsManager>,
 	recorder: ReturnType<typeof recordingManager>,
 ) => {
@@ -67,10 +72,12 @@ export const createClientsManager = (
 		socket.on("close", unsubscribe);
 	};
 
-	const createEmitterConnection = (socket: WebSocket) => {
+	const createEmitterConnection = (socket: WebSocket, ip: string) => {
 		const id = createId();
 		const connection: EmitterClientConnection = {
 			id,
+			ip,
+			hashId: hashId(id),
 			remoteConnection$: writable(undefined),
 			streamInfo$: computed((): StreamInfo | undefined => connection.api.data$()?.streamInfo, { equal: deepEqual }),
 			emitterToReceiverInfo$: computed((): EmitterToReceiverInfo | undefined => {
@@ -81,12 +88,20 @@ export const createClientsManager = (
 					};
 				}
 			}),
+			adminInfo$: computed((): EmitterAdminInfo => {
+				return {
+					emitterIP: ip,
+					emitterInfo: connection.api.data$(),
+					receiverIP: connection.remoteConnection$()?.ip,
+					receiverInfo: connection.remoteConnection$()?.api.data$(),
+				};
+			}),
 			socket,
 			api: null as any,
 		};
 		const dataSent$ = computed((): ServerSentEmitterInfo => {
 			return {
-				type: "emitter",
+				mode: "emitter",
 				mediaConstraints: config.mediaConstraints,
 				...connection.remoteConnection$()?.receiverToEmitterInfo$(),
 			};
@@ -102,11 +117,12 @@ export const createClientsManager = (
 		socket.on("close", obs.addId(id));
 	};
 
-	const createReceiverConnection = (socket: WebSocket, emitter: EmitterClientConnection) => {
+	const createReceiverConnection = (socket: WebSocket, emitter: EmitterClientConnection, ip: string) => {
 		const id = createId();
 		const recordURL = recorder.createRecordURL(id);
 		const connection: ReceiverClientConnection = {
 			id,
+			ip,
 			remoteConnection$: readable(emitter),
 			receiverToEmitterInfo$: computed((): ReceiverToEmitterInfo | undefined => {
 				const data = connection.api.data$();
@@ -121,7 +137,7 @@ export const createClientsManager = (
 		};
 		const dataSent$ = computed((): ServerSentReceiverInfo => {
 			return {
-				type: "receiver",
+				mode: "receiver",
 				recordOptions: config.recordOptions,
 				recordURL,
 				targetDelay: config.targetDelay,
@@ -178,18 +194,40 @@ export const createClientsManager = (
 		subscribeUntilSocketClose(connectStreamAction$, socket);
 	};
 
+	const createAdminConnection = (socket: WebSocket) => {
+		const emitters$ = computed(() => {
+			const connections = emitterConnections();
+			const res: ServerSentAdminInfo["emitters"] = {};
+			for (const connection of connections) {
+				res[connection.hashId] = connection.adminInfo$();
+			}
+			return res;
+		});
+		const dataSent$ = computed((): ServerSentAdminInfo => {
+			return {
+				mode: "admin",
+				emitters: emitters$(),
+			};
+		});
+		websocketJsonRpc<RpcClientInterface, RpcServerInterface, Record<string, never>, ServerSentAdminInfo>({}, socket, dataSent$);
+	};
+
 	return {
 		createClientConnection: (socket: WebSocket, request: IncomingMessage) => {
 			const url = new URL(request.url!, "https://localhost/");
+			const ip = request.socket.remoteAddress!;
 
 			if (config.emitterPaths?.includes(url.pathname)) {
-				createEmitterConnection(socket);
+				createEmitterConnection(socket, ip);
+				return;
+			} else if (config.adminPaths?.includes(url.pathname)) {
+				createAdminConnection(socket);
 				return;
 			} else if (url.pathname.startsWith(config.receiverPrefix!)) {
 				const emitterId = url.pathname.substring(config.receiverPrefix!.length);
 				const emitter = emitterConnections.get(emitterId);
 				if (emitter && !emitter.remoteConnection$()) {
-					createReceiverConnection(socket, emitter);
+					createReceiverConnection(socket, emitter, ip);
 					return;
 				}
 			}

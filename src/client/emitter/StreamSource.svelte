@@ -1,9 +1,15 @@
 <script lang="ts">
+	import iconFullScreenExit from "bootstrap-icons/icons/fullscreen-exit.svg?raw";
+	import iconFullScreenEnter from "bootstrap-icons/icons/fullscreen.svg?raw";
+	import iconStop from "bootstrap-icons/icons/stop-fill.svg?raw";
 	import { _ } from "svelte-i18n";
-	import { ScreenConfig } from "./mediaDevices";
-	import type { Devices, StreamConfig } from "./mediaDevices";
-	import SpaceAvailable from "./storage/SpaceAvailable.svelte";
-	import { exitFullScreen, fullScreenActive$, fullScreenSupported, requestFullScreen } from "./fullScreen";
+	import BatteryInfo from "../battery/BatteryInfo.svelte";
+	import { batteryInfo$ } from "../battery/battery";
+	import { exitFullScreen, fullScreenActive$, fullScreenSupported, requestFullScreen } from "../fullScreen";
+	import type { Devices, StreamConfig } from "../mediaDevices";
+	import { ScreenConfig } from "../mediaDevices";
+	import SpaceAvailable from "../storage/SpaceAvailable.svelte";
+	import { storageInfo$ } from "../storage/browserStorage";
 
 	export let mediaConstraints: MediaStreamConstraints | undefined;
 	export let mediaDevices: Devices;
@@ -93,22 +99,26 @@
 			<label for="record">{$_("record")}</label>
 		</div>
 		{#if record}
-			<SpaceAvailable />
+			<SpaceAvailable storageInfo={$storageInfo$} />
 		{/if}
+		<BatteryInfo batteryInfo={$batteryInfo$} />
 		<div class="flex">
 			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button>{#if !!navigator.mediaDevices.getDisplayMedia}<button on:click={setScreenConfig}>{$_("shareScreen")}</button>{/if}
 		</div>
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
 	{:else}
-		<button on:click={stop}>{$_("stopSharing")}</button>
-		{#if $fullScreenActive$}
-			<button on:click={exitFullScreen}>{$_("exitFullScreen")}</button>
-		{:else if fullScreenSupported && !isSharingScreen}
-			<button on:click={requestFullScreen}>{$_("switchToFullScreen")}</button>
-		{/if}
+		<div class="flex">
+			<button class="flex" on:click={stop} title={$_("stopSharing")}>{@html iconStop}</button>
+			{#if $fullScreenActive$}
+				<button class="flex" on:click={exitFullScreen} title={$_("exitFullScreen")}>{@html iconFullScreenExit}</button>
+			{:else if fullScreenSupported && !isSharingScreen}
+				<button class="flex" on:click={requestFullScreen} title={$_("switchToFullScreen")}>{@html iconFullScreenEnter}</button>
+			{/if}
+		</div>
 		{#if record}
-			<SpaceAvailable />
+			<SpaceAvailable storageInfo={$storageInfo$} />
 		{/if}
+		<BatteryInfo batteryInfo={$batteryInfo$} />
 	{/if}
 </div>
 

@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { _ } from "svelte-i18n";
 	import { browserStorageFiles, saveFile, removeFile } from "./browserStorage";
+	import { formatSize } from "./formatSize";
 </script>
 
 {#if $browserStorageFiles.length > 0}
 	<div class="container flex vertical">
 		{#each $browserStorageFiles as file}
 			<div>
-				{file.name}
+				{file.name} ({formatSize(file.size, $_)})
 				<button on:click={() => saveFile(file)}>{$_("save")}</button>
 				<button on:click={() => removeFile(file)}>{$_("delete")}</button>
 			</div>

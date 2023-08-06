@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { writable } from "@amadeus-it-group/tansu";
 	import StreamSource from "./StreamSource.svelte";
-	import { deriveStream, mediaDevices$ } from "./mediaDevices";
-	import type { StreamConfig } from "./mediaDevices";
+	import { deriveStream, mediaDevices$ } from "../mediaDevices";
+	import type { StreamConfig } from "../mediaDevices";
 
 	export let stream: MediaStream | null;
 	export let mediaConstraints: MediaStreamConstraints | undefined;

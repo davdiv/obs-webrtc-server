@@ -31,6 +31,7 @@ const captureDelay = (stat: undefined | (RTCRtpSynchronizationSource & { capture
 export const createRtcStatsModel = (peerConnection$: ReadableSignal<RTCPeerConnection | undefined>) => {
 	const peerConnectionStats$ = asyncSerialDerived(peerConnection$, {
 		async derive(peerConnection, set: OnUseArgument<RTCStatsReport | undefined>, abortSignal) {
+			set(undefined);
 			if (peerConnection) {
 				while (!abortSignal.aborted) {
 					set(await peerConnection.getStats());
@@ -47,6 +48,7 @@ export const createRtcStatsModel = (peerConnection$: ReadableSignal<RTCPeerConne
 	const createReceiverAndCaptureDelayStores = (kind: MediaKind) => {
 		const receiver$ = asyncSerialDerived(peerConnection$, {
 			async derive(peerConnection, set: OnUseArgument<RTCRtpReceiver | undefined>, abortSignal) {
+				set(undefined);
 				if (peerConnection) {
 					const trackHandler = () => {
 						set(findReceiver(peerConnection, kind));

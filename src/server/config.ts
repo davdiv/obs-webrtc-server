@@ -8,6 +8,7 @@ export interface ServerConfig {
 	listenPort?: number;
 	listenHost?: string;
 	emitterPaths?: string[];
+	adminPaths?: string[];
 	receiverPrefix?: string;
 	rtcConfiguration?: RTCConfiguration;
 	mediaConstraints?: MediaStreamConstraints;
