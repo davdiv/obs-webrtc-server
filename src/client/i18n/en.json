@@ -7,6 +7,8 @@
 	"defaultVideoDevice": "Default",
 	"delete": "Delete",
 	"disconnected": "Disconnected!",
+	"exitFullScreen": "Exit full screen",
+	"fullScreen": "Full screen",
 	"gigabyte": "{size} GB",
 	"kilobyte": "{size} kB",
 	"live": "Live",
@@ -20,6 +22,7 @@
 	"shareVideoAudioDevices": "Share video/audio devices",
 	"spaceAvailable": "{usage} used / {quota} available",
 	"stopSharing": "Stop sharing",
+	"switchToFullScreen": "Switch to full screen",
 	"videoDevice": "Video device:",
 	"videoDeviceNum": "Video device {num}",
 	"volatileStorage": "Volatile storage"

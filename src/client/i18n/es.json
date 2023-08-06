@@ -7,6 +7,8 @@
 	"defaultVideoDevice": "Por defecto",
 	"delete": "Borrar",
 	"disconnected": "¡Desconectado!",
+	"exitFullScreen": "Salir de la pantalla completa",
+	"fullScreen": "Pantalla completa",
 	"gigabyte": "{size} GB",
 	"kilobyte": "{size} kB",
 	"live": "En directo",
@@ -20,6 +22,7 @@
 	"shareVideoAudioDevices": "Compartir dispositivos de video/audio",
 	"spaceAvailable": "{usage} utilizados / {quota} disponibles",
 	"stopSharing": "Deja de compartir",
+	"switchToFullScreen": "Pasar a pantalla completa",
 	"videoDevice": "Dispositivo de vídeo:",
 	"videoDeviceNum": "Dispositivo de vídeo {num}",
 	"volatileStorage": "Almacenamiento volátil"

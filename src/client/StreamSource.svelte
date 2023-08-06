@@ -3,12 +3,16 @@
 	import { ScreenConfig } from "./mediaDevices";
 	import type { Devices, StreamConfig } from "./mediaDevices";
 	import SpaceAvailable from "./storage/SpaceAvailable.svelte";
+	import { exitFullScreen, fullScreenActive$, fullScreenSupported, requestFullScreen } from "./fullScreen";
 
 	export let mediaConstraints: MediaStreamConstraints | undefined;
 	export let mediaDevices: Devices;
 	export let streamConfig: StreamConfig;
 	export let stream: MediaStream | null = null;
 	export let record: boolean;
+	export let fullScreen = true;
+
+	$: isSharingScreen = streamConfig instanceof ScreenConfig;
 
 	let selectedVideoDevice = mediaConstraints?.video === false ? "none" : "default";
 	let selectedAudioDevice = mediaConstraints?.audio === false ? "none" : "default";
@@ -42,6 +46,18 @@
 	const stop = () => {
 		streamConfig = null;
 	};
+
+	$: {
+		if (stream && !isSharingScreen && fullScreen) {
+			requestFullScreen();
+		}
+	}
+
+	$: {
+		if ($fullScreenActive$ && !stream) {
+			exitFullScreen();
+		}
+	}
 </script>
 
 <div class="container flex vertical">
@@ -66,6 +82,12 @@
 				{/each}
 			</select>
 		</div>
+		{#if fullScreenSupported}
+			<div>
+				<input id="fullScreen" type="checkbox" bind:checked={fullScreen} />
+				<label for="fullScreen">{$_("fullScreen")}</label>
+			</div>
+		{/if}
 		<div>
 			<input id="record" type="checkbox" bind:checked={record} />
 			<label for="record">{$_("record")}</label>
@@ -79,6 +101,11 @@
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
 	{:else}
 		<button on:click={stop}>{$_("stopSharing")}</button>
+		{#if $fullScreenActive$}
+			<button on:click={exitFullScreen}>{$_("exitFullScreen")}</button>
+		{:else if fullScreenSupported && !isSharingScreen}
+			<button on:click={requestFullScreen}>{$_("switchToFullScreen")}</button>
+		{/if}
 		{#if record}
 			<SpaceAvailable />
 		{/if}
