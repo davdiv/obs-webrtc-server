@@ -6,7 +6,7 @@ import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, Res
 import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
 import { record } from "./recordUpload";
 import { createRtcStatsModel } from "./rtcStats";
-import { storageInfo$ } from "./storage/browserStorage";
+import { browserStorageFilesInfo$, storageInfo$ } from "./storage/browserStorage";
 import { recordInBrowserStorage } from "./storage/recordInBrowserStorage";
 import { websocketJsonRpc } from "./websocketJsonRpc";
 import { batteryInfo$ } from "./battery/battery";
@@ -58,6 +58,7 @@ export const createModel = () => {
 				storageInfo: storageInfo$(),
 				batteryInfo: batteryInfo$(),
 				recording: recordEmitterStreamAction$(),
+				files: browserStorageFilesInfo$(),
 			} satisfies ClientSentEmitterInfo;
 		} else if (mode === "receiver") {
 			return {

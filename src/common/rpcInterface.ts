@@ -44,12 +44,18 @@ export interface StorageInfo {
 	persisted?: boolean;
 }
 
+export interface StoredFileInfo {
+	name: string;
+	size: number;
+}
+
 export interface ClientSentEmitterInfo extends EmitterToReceiverInfo {
 	streamInfo?: StreamInfo;
 	videoResolution?: Resolution;
 	recording?: boolean;
 	storageInfo?: StorageInfo;
 	batteryInfo?: BatteryInfo;
+	files?: StoredFileInfo[];
 }
 
 export interface ClientSentReceiverInfo extends ReceiverToEmitterInfo {
