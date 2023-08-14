@@ -62,8 +62,8 @@ export const createModel = () => {
 			} satisfies ClientSentEmitterInfo;
 		} else if (mode === "receiver") {
 			return {
-				audioDelay: audioDelay$(),
-				videoDelay: videoDelay$(),
+				audioDelay: audioDelay.measuredDelay$(),
+				videoDelay: videoDelay.measuredDelay$(),
 				obsActive: obsSourceActive$(),
 				recording: recordReceiverStreamAction$(),
 				videoResolution: receiverStreamResolution$(),
@@ -72,19 +72,6 @@ export const createModel = () => {
 	});
 	const roundTripTime$ = computed(() => receiverData$()?.roundTripTime);
 	const targetDelay$ = computed(() => receiverData$()?.targetDelay);
-	const audioDelay$ = computed(() => computeDelay(rtcStats.audio.captureDelay$(), rtcStats.timestampDiff$(), roundTripTime$()));
-	const videoDelay$ = computed(() => computeDelay(rtcStats.video.captureDelay$(), rtcStats.timestampDiff$(), roundTripTime$()));
-	const delayDiff$ = computed(() => {
-		const targetDelay = targetDelay$();
-		if (targetDelay != null) {
-			const measuredDelay = audioDelay$() ?? videoDelay$();
-			if (measuredDelay != null) {
-				const diffDelay = (targetDelay - measuredDelay) / 1000;
-				return Math.abs(diffDelay) < 0.01 ? 0 : diffDelay;
-			}
-		}
-		return 0;
-	});
 
 	const needNewSocket$ = writable({} as null | object);
 	const socketApi$ = asyncSerialDerived(needNewSocket$, {
@@ -161,21 +148,27 @@ export const createModel = () => {
 		},
 		undefined as undefined | RecordingInfo,
 	);
-	const applyPlayoutDelayHintAction$ = computed(() => {
-		const audioReceiver = rtcStats.audio.receiver$();
-		const videoReceiver = rtcStats.video.receiver$();
-		const delayDiff = delayDiff$();
-		if (delayDiff != 0) {
-			const existingDelay = (audioReceiver ?? (videoReceiver as any))?.playoutDelayHint ?? 0;
-			const targetDelay = Math.max(0, existingDelay + delayDiff);
-			if (audioReceiver) {
-				(audioReceiver as any).playoutDelayHint = targetDelay;
+
+	const applyDelayFor = (audioOrVideo: typeof rtcStats.audio) => {
+		const measuredDelay$ = computed(() => computeDelay(audioOrVideo.captureDelay$(), rtcStats.timestampDiff$(), roundTripTime$()));
+		const applyPlayoutDelayHintAction$ = computed(() => {
+			const receiver: any = audioOrVideo.receiver$();
+			if (!receiver) return;
+			const measuredDelay = measuredDelay$();
+			const targetDelay = targetDelay$();
+			if (receiver && measuredDelay != null && targetDelay != null && Math.abs(targetDelay - measuredDelay) > 80) {
+				const existingDelay = (receiver.playoutDelayHint ?? 0) * 1000;
+				const newDelayNoBoundary = existingDelay + (targetDelay - measuredDelay) * 0.85;
+				const newDelay = Math.max(Math.min(targetDelay, newDelayNoBoundary), 0);
+				receiver.playoutDelayHint = newDelay / 1000;
 			}
-			if (videoReceiver) {
-				(videoReceiver as any).playoutDelayHint = targetDelay;
-			}
-		}
-	});
+		});
+		return {
+			measuredDelay$,
+			applyPlayoutDelayHintAction$,
+		};
+	};
+
 	const updateTracksAction$ = computed(() => {
 		if (mode$() === "emitter") {
 			const peerConnection = peerConnection$();
@@ -206,7 +199,8 @@ export const createModel = () => {
 	const actions$ = computed(() => {
 		socketApi$();
 		updateTracksAction$();
-		applyPlayoutDelayHintAction$();
+		audioDelay.applyPlayoutDelayHintAction$();
+		videoDelay.applyPlayoutDelayHintAction$();
 		recordReceiverStreamAction$();
 		recordEmitterStreamAction$();
 	});
@@ -291,6 +285,8 @@ export const createModel = () => {
 	};
 
 	const rtcStats = createRtcStatsModel(peerConnection$);
+	const audioDelay = applyDelayFor(rtcStats.audio);
+	const videoDelay = applyDelayFor(rtcStats.video);
 
 	const unsubscribeActions = actions$.subscribe(() => {});
 
