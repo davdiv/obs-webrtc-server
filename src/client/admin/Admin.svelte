@@ -2,14 +2,14 @@
 	import { model } from "../model";
 	import EmitterInfo from "./EmitterInfo.svelte";
 
-	const { adminData$ } = model;
+	const { adminData$, socketApi$ } = model;
 </script>
 
 <div class="fullscreen flex vertical">
-	{#if $adminData$}
+	{#if $adminData$ && $socketApi$}
 		<div>
 			{#each Object.keys($adminData$.emitters) as emitterId}
-				<EmitterInfo emitter={$adminData$.emitters[emitterId]} {emitterId} />
+				<EmitterInfo emitter={$adminData$.emitters[emitterId]} {emitterId} socketApi={$socketApi$} />
 			{/each}
 		</div>
 	{/if}

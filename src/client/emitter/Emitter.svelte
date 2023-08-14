@@ -6,16 +6,16 @@
 	import StoredFilesList from "../storage/StoredFilesList.svelte";
 	import Recording from "./Recording.svelte";
 
-	const { emitterStream$, emitterData$, recordLocally$, updateResolution } = model;
+	const { emitterStream$, emitterData$, updateResolution, emitterRecording$ } = model;
 </script>
 
-<StreamSelection bind:stream={$emitterStream$} mediaConstraints={$emitterData$?.mediaConstraints} bind:record={$recordLocally$} />
-<Video stream={$emitterStream$} muted on:resize={updateResolution} /><br />
+<StreamSelection bind:stream={$emitterStream$} mediaConstraints={$emitterData$?.mediaConstraints} />
+<Video stream={$emitterStream$} muted on:resize={updateResolution} />
 
 {#if $emitterData$?.obsActive}
 	<Live />
 {/if}
-{#if $recordLocally$ && $emitterStream$}
+{#if $emitterRecording$}
 	<Recording />
 {/if}
 {#if !$emitterStream$}

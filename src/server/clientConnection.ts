@@ -25,6 +25,7 @@ import type { obsManager } from "./obs";
 import type { recordingManager } from "./recorder";
 import { createId, hashId } from "./utils/createId";
 import { websocketJsonRpc } from "./websocketJsonRpc";
+import type { createUploadManager } from "./uploadManager";
 
 interface BaseClientConnection {
 	id: string;
@@ -33,7 +34,8 @@ interface BaseClientConnection {
 }
 
 interface EmitterClientConnection extends BaseClientConnection {
-	hashId: string;
+	shortId: string;
+	record$: WritableSignal<string | undefined>;
 	remoteConnection$: WritableSignal<ReceiverClientConnection | undefined>;
 	emitterToReceiverInfo$: ReadableSignal<EmitterToReceiverInfo | undefined>;
 	streamInfo$: ReadableSignal<StreamInfo | undefined>;
@@ -51,6 +53,7 @@ export const createClientsManager = (
 	config: Pick<ServerConfig, "receiverPrefix" | "emitterPaths" | "adminPaths" | "mediaConstraints" | "rtcConfiguration" | "recordOptions" | "targetDelay">,
 	obs: ReturnType<typeof obsManager>,
 	recorder: ReturnType<typeof recordingManager>,
+	uploadManager: ReturnType<typeof createUploadManager>,
 ) => {
 	const emitterConnections = storeMap<string, EmitterClientConnection>();
 	const receiverConnections = storeMap<string, ReceiverClientConnection>();
@@ -77,7 +80,8 @@ export const createClientsManager = (
 		const connection: EmitterClientConnection = {
 			id,
 			ip,
-			hashId: hashId(id),
+			record$: writable(undefined),
+			shortId: hashId(id),
 			remoteConnection$: writable(undefined),
 			streamInfo$: computed((): StreamInfo | undefined => connection.api.data$()?.streamInfo, { equal: deepEqual }),
 			emitterToReceiverInfo$: computed((): EmitterToReceiverInfo | undefined => {
@@ -91,6 +95,7 @@ export const createClientsManager = (
 			adminInfo$: computed((): EmitterAdminInfo => {
 				return {
 					emitterIP: ip,
+					emitterShortId: connection.shortId,
 					emitterInfo: connection.api.data$(),
 					receiverIP: connection.remoteConnection$()?.ip,
 					receiverInfo: connection.remoteConnection$()?.api.data$(),
@@ -103,6 +108,8 @@ export const createClientsManager = (
 			return {
 				mode: "emitter",
 				mediaConstraints: config.mediaConstraints,
+				recordOptions: config.recordOptions,
+				record: connection.record$(),
 				...connection.remoteConnection$()?.receiverToEmitterInfo$(),
 			};
 		});
@@ -199,7 +206,7 @@ export const createClientsManager = (
 			const connections = emitterConnections();
 			const res: ServerSentAdminInfo["emitters"] = {};
 			for (const connection of connections) {
-				res[connection.hashId] = connection.adminInfo$();
+				res[connection.id] = connection.adminInfo$();
 			}
 			return res;
 		});
@@ -209,7 +216,46 @@ export const createClientsManager = (
 				emitters: emitters$(),
 			};
 		});
-		websocketJsonRpc<RpcClientInterface, RpcServerInterface, Record<string, never>, ServerSentAdminInfo>({}, socket, dataSent$);
+		websocketJsonRpc<RpcClientInterface, RpcServerInterface, Record<string, never>, ServerSentAdminInfo>(
+			{
+				async uploadFile(arg) {
+					const emitter = emitterConnections.get(arg.emitterId);
+					if (emitter) {
+						const uploadURL = uploadManager.createUploadURL({
+							emitterShortId: emitter.shortId,
+							fileName: arg.fileName,
+						});
+						await emitter.api?.("uploadFile", {
+							fileName: arg.fileName,
+							uploadURL,
+						});
+					}
+				},
+				async removeFile(arg) {
+					const emitter = emitterConnections.get(arg.emitterId);
+					if (emitter) {
+						await emitter.api?.("removeFile", {
+							fileName: arg.fileName,
+						});
+					}
+				},
+				async toggleRecording(arg) {
+					const emitter = emitterConnections.get(arg.emitterId);
+					if (emitter) {
+						emitter.record$.update((value) => {
+							if ((arg.action === "start" && !value) || arg.action === "newFile") {
+								value = createId();
+							} else if (arg.action === "stop") {
+								value = undefined;
+							}
+							return value;
+						});
+					}
+				},
+			},
+			socket,
+			dataSent$,
+		);
 	};
 
 	return {

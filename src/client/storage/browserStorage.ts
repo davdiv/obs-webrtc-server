@@ -68,9 +68,24 @@ export const saveFile = async (fileInfo: StoredFile) => {
 };
 
 export const removeFile = async (fileInfo: StoredFile) => {
+	await removeFileByName(fileInfo.fileHandle.name);
+};
+
+export const removeFileByName = async (name: string) => {
 	const directory = await navigator.storage.getDirectory();
-	await directory.removeEntry(fileInfo.fileHandle.name);
+	await directory.removeEntry(name);
 	refreshStorageFiles();
+};
+
+export const uploadFile = async (name: string, url: string) => {
+	const directory = await navigator.storage.getDirectory();
+	const fileHandle = await directory.getFileHandle(name);
+	const body = await fileHandle.getFile();
+	const res = await fetch(url, {
+		method: "PUT",
+		body,
+	});
+	console.log(res);
 };
 
 export const requestPersistentStorage = async () => {

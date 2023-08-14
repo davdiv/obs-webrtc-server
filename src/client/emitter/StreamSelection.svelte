@@ -6,10 +6,9 @@
 
 	export let stream: MediaStream | null;
 	export let mediaConstraints: MediaStreamConstraints | undefined;
-	export let record: boolean;
 	let streamConfig$ = writable(null as StreamConfig);
 	let videoStream$ = deriveStream(streamConfig$);
 	$: stream = $videoStream$;
 </script>
 
-<StreamSource mediaDevices={$mediaDevices$} {mediaConstraints} bind:record bind:streamConfig={$streamConfig$} {stream} />
+<StreamSource mediaDevices={$mediaDevices$} {mediaConstraints} bind:streamConfig={$streamConfig$} {stream} />

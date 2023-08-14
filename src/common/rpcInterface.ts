@@ -10,6 +10,8 @@ export type ServerSentInfo = ServerSentEmitterInfo | ServerSentReceiverInfo | Se
 export interface ServerSentEmitterInfo extends ReceiverToEmitterInfo {
 	mode: "emitter";
 	mediaConstraints?: MediaStreamConstraints;
+	recordOptions?: MediaRecorderOptions;
+	record?: string | undefined;
 }
 
 export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
@@ -27,6 +29,7 @@ export interface ServerSentAdminInfo {
 export type ClientSentInfo = ClientSentEmitterInfo | ClientSentReceiverInfo | undefined;
 
 export interface EmitterAdminInfo {
+	emitterShortId: string;
 	emitterIP: string;
 	emitterInfo?: ClientSentEmitterInfo;
 	receiverIP?: string;
@@ -49,10 +52,15 @@ export interface StoredFileInfo {
 	size: number;
 }
 
+export interface RecordingInfo extends StoredFileInfo {
+	startTime: string;
+	updateTime: string;
+}
+
 export interface ClientSentEmitterInfo extends EmitterToReceiverInfo {
 	streamInfo?: StreamInfo;
 	videoResolution?: Resolution;
-	recording?: boolean;
+	recording?: RecordingInfo;
 	storageInfo?: StorageInfo;
 	batteryInfo?: BatteryInfo;
 	files?: StoredFileInfo[];
@@ -83,8 +91,13 @@ export interface RpcClientInterface {
 	createAnswerRTCConnection(arg: { offer: RTCSessionDescriptionInit }): RTCSessionDescriptionInit;
 	completeOfferRTCConnection(arg: { answer: RTCSessionDescriptionInit }): void;
 	iceCandidate(arg: { candidate: RTCIceCandidateInit | null }): void;
+	uploadFile(arg: { fileName: string; uploadURL: string }): void;
+	removeFile(arg: { fileName: string }): void;
 }
 
 export interface RpcServerInterface {
 	iceCandidate?(arg: { candidate: RTCIceCandidateInit | null }): void;
+	uploadFile?(arg: { emitterId: string; fileName: string }): void;
+	removeFile?(arg: { emitterId: string; fileName: string }): void;
+	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile" }): void;
 }

@@ -15,7 +15,6 @@
 	export let mediaDevices: Devices;
 	export let streamConfig: StreamConfig;
 	export let stream: MediaStream | null = null;
-	export let record: boolean;
 	export let fullScreen = true;
 
 	$: isSharingScreen = streamConfig instanceof ScreenConfig;
@@ -66,8 +65,8 @@
 	}
 </script>
 
-<div class="container flex vertical">
-	{#if !stream}
+{#if !stream}
+	<div class="container flex vertical">
 		<div class="flex">
 			<label for="videoDevice">{$_("videoDevice")}</label>
 			<select id="videoDevice" bind:value={selectedVideoDevice}>
@@ -94,19 +93,15 @@
 				<label for="fullScreen">{$_("fullScreen")}</label>
 			</div>
 		{/if}
-		<div>
-			<input id="record" type="checkbox" bind:checked={record} />
-			<label for="record">{$_("record")}</label>
-		</div>
-		{#if record}
-			<SpaceAvailable storageInfo={$storageInfo$} />
-		{/if}
+		<SpaceAvailable storageInfo={$storageInfo$} />
 		<BatteryInfo batteryInfo={$batteryInfo$} />
 		<div class="flex">
 			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button>{#if !!navigator.mediaDevices.getDisplayMedia}<button on:click={setScreenConfig}>{$_("shareScreen")}</button>{/if}
 		</div>
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
-	{:else}
+	</div>
+{:else}
+	<div class="container flex vertical sharing">
 		<div class="flex">
 			<button class="flex" on:click={stop} title={$_("stopSharing")}>{@html iconStop}</button>
 			{#if $fullScreenActive$}
@@ -115,26 +110,27 @@
 				<button class="flex" on:click={requestFullScreen} title={$_("switchToFullScreen")}>{@html iconFullScreenEnter}</button>
 			{/if}
 		</div>
-		{#if record}
-			<SpaceAvailable storageInfo={$storageInfo$} />
-		{/if}
+		<SpaceAvailable storageInfo={$storageInfo$} />
 		<BatteryInfo batteryInfo={$batteryInfo$} />
-	{/if}
-</div>
+	</div>
+{/if}
 
 <style>
 	select {
 		flex: 1 0;
 	}
 	div.container {
-		position: absolute;
-		left: 10px;
-		top: 10px;
 		border-radius: 10px;
 		padding: 10px;
 		border: 1px solid black;
 		background-color: white;
 		color: black;
+		margin: 10px;
+	}
+	div.sharing {
+		position: absolute;
+		left: 10px;
+		top: 10px;
 		z-index: 1;
 	}
 </style>

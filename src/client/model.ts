@@ -1,17 +1,17 @@
 import type { OnUseArgument } from "@amadeus-it-group/tansu";
 import { asReadable, computed, derived, writable } from "@amadeus-it-group/tansu";
 import fastDeepEqual from "fast-deep-equal";
+import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
+import { asyncSerialDerived } from "../common/asyncSerialDerived";
 import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
-import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, Resolution, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
+import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, RecordingInfo, Resolution, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
 import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
+import { batteryInfo$ } from "./battery/battery";
 import { record } from "./recordUpload";
 import { createRtcStatsModel } from "./rtcStats";
-import { browserStorageFilesInfo$, storageInfo$ } from "./storage/browserStorage";
+import { browserStorageFilesInfo$, removeFileByName, storageInfo$, uploadFile } from "./storage/browserStorage";
 import { recordInBrowserStorage } from "./storage/recordInBrowserStorage";
 import { websocketJsonRpc } from "./websocketJsonRpc";
-import { batteryInfo$ } from "./battery/battery";
-import { asyncSerialDerived } from "../common/asyncSerialDerived";
-import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
 
 const obsSourceActive$ = writable(false);
 if (window.obsstudio) {
@@ -118,7 +118,6 @@ export const createModel = () => {
 	});
 	const connected$ = computed(() => (socketApi$() ? true : needNewSocket$() ? false : null));
 
-	const recordLocally$ = writable(true);
 	const peerConnection$ = writable(undefined as RTCPeerConnection | undefined, { equal: Object.is });
 	const receiverStream$ = writable(null as MediaStream | null, { equal: Object.is });
 
@@ -147,15 +146,14 @@ export const createModel = () => {
 		{ equal: fastDeepEqual },
 	);
 	const recordEmitterStreamAction$ = derived(
-		[emitterStream$, recordLocally$],
-		([stream, recordLocally], set) => {
-			if (stream && recordLocally) {
-				set(true);
-				return recordInBrowserStorage(stream);
+		[emitterStream$, computed(() => emitterData$()?.recordOptions, { equal: fastDeepEqual }), computed(() => emitterData$()?.record)],
+		([stream, options, recordId], set) => {
+			set(undefined);
+			if (stream && recordId) {
+				return recordInBrowserStorage(stream, set, options);
 			}
-			set(false);
 		},
-		false,
+		undefined as undefined | RecordingInfo,
 	);
 	const applyPlayoutDelayHintAction$ = computed(() => {
 		const audioReceiver = rtcStats.audio.receiver$();
@@ -278,6 +276,12 @@ export const createModel = () => {
 			console.log("addIceCandidate");
 			await peerConnection$()?.addIceCandidate(arg.candidate ?? undefined);
 		},
+		async removeFile(arg) {
+			await removeFileByName(arg.fileName);
+		},
+		async uploadFile(arg) {
+			await uploadFile(arg.fileName, arg.uploadURL);
+		},
 	};
 
 	const rtcStats = createRtcStatsModel(peerConnection$);
@@ -302,8 +306,9 @@ export const createModel = () => {
 		connected$: asReadable(connected$),
 		emitterStream$,
 		receiverStream$: asReadable(receiverStream$),
-		recordLocally$,
 		updateResolution,
+		emitterRecording$: recordEmitterStreamAction$,
+		socketApi$,
 	};
 };
 

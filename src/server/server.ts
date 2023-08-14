@@ -10,6 +10,7 @@ import type { ServerConfig } from "./config";
 import { getInstallPath } from "./installPath";
 import { obsManager } from "./obs";
 import { recordingManager } from "./recorder";
+import { createUploadManager } from "./uploadManager";
 
 const dev = import.meta.env.MODE === "development";
 
@@ -51,16 +52,18 @@ export const createServer = async (config: ServerConfig, configFilePath: string)
 	const server = createHttpServer();
 	const obs = obsManager(config, (id) => `${obsPrefix}${id}`);
 	const recorder = recordingManager(config, configFilePath);
+	const uploadManager = createUploadManager(config, configFilePath);
 	const staticServer = await createServeMiddleware(server);
 
 	server.on("request", (req, res) => {
+		if (uploadManager.handleRequest(req, res)) return;
 		if (recorder.handleRequest(req, res)) return;
 		staticServer(req, res);
 	});
 	const wss = new WebSocketServer({ noServer: true });
 	sendRegularHeartBeat(wss);
 
-	const clientsManager = createClientsManager(config, obs, recorder);
+	const clientsManager = createClientsManager(config, obs, recorder, uploadManager);
 	wss.on("connection", clientsManager.createClientConnection);
 	server.on("upgrade", (request, socket, head) => {
 		const protocol = request.headers["sec-websocket-protocol"];

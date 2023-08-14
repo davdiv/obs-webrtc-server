@@ -26,9 +26,6 @@ const defaultConfig = (): ServerConfig => {
 				height: 720,
 			},
 		},
-		recordOptions: {
-			mimeType: "video/webm;codecs=vp9,opus",
-		},
 	};
 };
 
