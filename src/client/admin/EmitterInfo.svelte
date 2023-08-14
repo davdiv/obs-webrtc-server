@@ -43,13 +43,15 @@
 		onStopClick={() => socketApi("toggleRecording", { emitterId, emitter: true, action: "stop" })}
 	/>
 	<Resolution resolution={emitter.receiverInfo?.videoResolution} hasAudio={emitter.emitterInfo?.streamInfo?.hasAudio} />
-	<RecordingInfo
-		label={$_("receiverRecording")}
-		recordingInfo={emitter.receiverInfo?.recording}
-		streamInfo={emitter.emitterInfo?.streamInfo}
-		onRecordClick={() => socketApi("toggleRecording", { emitterId, receiver: true, action: "start" })}
-		onStopClick={() => socketApi("toggleRecording", { emitterId, receiver: true, action: "stop" })}
-	/>
+	{#if emitter.receiverInfo}
+		<RecordingInfo
+			label={$_("receiverRecording")}
+			recordingInfo={emitter.receiverInfo?.recording}
+			streamInfo={emitter.emitterInfo?.streamInfo}
+			onRecordClick={() => socketApi("toggleRecording", { emitterId, receiver: true, action: "start" })}
+			onStopClick={() => socketApi("toggleRecording", { emitterId, receiver: true, action: "stop" })}
+		/>
+	{/if}
 	{#if emitter.receiverInfo?.videoDelay}
 		<div>{$_("videoDelay", { values: { delay: Math.round(emitter.receiverInfo?.videoDelay) } })}</div>
 	{/if}
