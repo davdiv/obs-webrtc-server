@@ -28,7 +28,7 @@
 		"@typescript-eslint/parser": "^6.4.0",
 		"ajv": "^8.12.0",
 		"bootstrap-icons": "^1.10.5",
-		"eslint-config-prettier": "^8.10.0",
+		"eslint-config-prettier": "^9.0.0",
 		"eslint-plugin-svelte": "^2.32.4",
 		"eslint": "^8.47.0",
 		"fast-deep-equal": "^3.1.3",
