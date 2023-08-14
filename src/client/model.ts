@@ -156,7 +156,7 @@ export const createModel = () => {
 			if (!receiver) return;
 			const measuredDelay = measuredDelay$();
 			const targetDelay = targetDelay$();
-			if (receiver && measuredDelay != null && targetDelay != null && Math.abs(targetDelay - measuredDelay) > 80) {
+			if (receiver && measuredDelay != null && targetDelay != null && Math.abs(targetDelay - measuredDelay) > 30) {
 				const existingDelay = (receiver.playoutDelayHint ?? 0) * 1000;
 				const newDelayNoBoundary = existingDelay + (targetDelay - measuredDelay) * 0.85;
 				const newDelay = Math.max(Math.min(targetDelay, newDelayNoBoundary), 0);
