@@ -87,7 +87,7 @@ export const createModel = () => {
 	});
 
 	const needNewSocket$ = writable({} as null | object);
-	const socketApi$ = asyncSerialDerived([needNewSocket$], {
+	const socketApi$ = asyncSerialDerived(needNewSocket$, {
 		async derive(object, set: OnUseArgument<CallMethod<RpcServerInterface, ServerSentInfo> | undefined>, abortSignal) {
 			if (!object) {
 				return;
