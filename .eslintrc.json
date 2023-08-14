@@ -2,7 +2,7 @@
 	"root": true,
 	"parser": "@typescript-eslint/parser",
 	"plugins": ["@typescript-eslint"],
-	"extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+	"extends": ["eslint:recommended", "plugin:svelte/recommended", "plugin:@typescript-eslint/recommended", "plugin:svelte/prettier", "prettier"],
 	"rules": {
 		"@typescript-eslint/consistent-type-imports": "error",
 		"@typescript-eslint/explicit-module-boundary-types": "off",
@@ -15,6 +15,29 @@
 				"args": "none",
 				"ignoreRestSiblings": true
 			}
-		]
-	}
+		],
+		"no-undef": "off",
+		"svelte/no-at-html-tags": "off"
+	},
+	"overrides": [
+		{
+			"env": { "browser": true },
+			"files": ["src/client/**"]
+		},
+		{
+			"env": { "node": true },
+			"files": ["src/server/**"]
+		},
+		{
+			"env": { "shared-node-browser": true },
+			"files": ["src/common/**"]
+		},
+		{
+			"files": ["*.svelte"],
+			"parser": "svelte-eslint-parser",
+			"parserOptions": {
+				"parser": "@typescript-eslint/parser"
+			}
+		}
+	]
 }
