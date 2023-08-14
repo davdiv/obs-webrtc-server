@@ -9,6 +9,7 @@ export type ServerSentInfo = ServerSentEmitterInfo | ServerSentReceiverInfo | Se
 
 export interface ServerSentEmitterInfo extends ReceiverToEmitterInfo {
 	mode: "emitter";
+	recordingInReceiver?: boolean;
 	mediaConstraints?: MediaStreamConstraints;
 	recordOptions?: MediaRecorderOptions;
 	record?: string | undefined;
@@ -16,6 +17,7 @@ export interface ServerSentEmitterInfo extends ReceiverToEmitterInfo {
 
 export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
 	mode: "receiver";
+	record?: string | undefined;
 	recordURL?: string;
 	recordOptions?: MediaRecorderOptions;
 	targetDelay?: number;
@@ -69,6 +71,8 @@ export interface ClientSentEmitterInfo extends EmitterToReceiverInfo {
 export interface ClientSentReceiverInfo extends ReceiverToEmitterInfo {
 	audioDelay?: number;
 	videoDelay?: number;
+	recording?: RecordingInfo;
+	videoResolution?: Resolution;
 }
 
 export interface ReceiverToEmitterInfo {
@@ -99,5 +103,5 @@ export interface RpcServerInterface {
 	iceCandidate?(arg: { candidate: RTCIceCandidateInit | null }): void;
 	uploadFile?(arg: { emitterId: string; fileName: string }): void;
 	removeFile?(arg: { emitterId: string; fileName: string }): void;
-	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile" }): void;
+	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile"; receiver?: boolean; emitter?: boolean }): void;
 }

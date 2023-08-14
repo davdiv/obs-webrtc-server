@@ -32,14 +32,7 @@ interface StartedRecording {
 	allowedRecording: AllowedRecording;
 }
 
-export const recordingManager = (config: Pick<ServerConfig, "record" | "recordPrefix" | "recordingsFolder">, configFilePath: string) => {
-	if (!config.record) {
-		return {
-			createRecordURL: (id: string) => undefined,
-			deleteRecordURL: async (url: string) => undefined,
-			handleRequest: (req: IncomingMessage, res: ServerResponse) => false,
-		};
-	}
+export const recordingManager = (config: Pick<ServerConfig, "recordPrefix" | "recordingsFolder">, configFilePath: string) => {
 	const recordURLs = new Map<string, AllowedRecording | StartedRecording>();
 	const recordPrefix = config.recordPrefix!;
 	const extractId = (url: string) => {

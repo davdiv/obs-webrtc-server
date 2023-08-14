@@ -43,9 +43,12 @@ interface EmitterClientConnection extends BaseClientConnection {
 	api: CallMethod<RpcClientInterface, ClientSentEmitterInfo>;
 }
 
+type FullReceiverToEmitterInfo = ReceiverToEmitterInfo & Pick<ServerSentEmitterInfo, "recordingInReceiver">;
+
 interface ReceiverClientConnection extends BaseClientConnection {
+	record$: WritableSignal<string | undefined>;
 	remoteConnection$: ReadableSignal<EmitterClientConnection | undefined>;
-	receiverToEmitterInfo$: ReadableSignal<ReceiverToEmitterInfo | undefined>;
+	receiverToEmitterInfo$: ReadableSignal<FullReceiverToEmitterInfo | undefined>;
 	api: CallMethod<RpcClientInterface, ClientSentReceiverInfo>;
 }
 
@@ -126,16 +129,18 @@ export const createClientsManager = (
 
 	const createReceiverConnection = (socket: WebSocket, emitter: EmitterClientConnection, ip: string) => {
 		const id = createId();
-		const recordURL = recorder.createRecordURL(id);
+		const recordURL = recorder.createRecordURL(emitter.id);
 		const connection: ReceiverClientConnection = {
 			id,
 			ip,
+			record$: writable(undefined),
 			remoteConnection$: readable(emitter),
-			receiverToEmitterInfo$: computed((): ReceiverToEmitterInfo | undefined => {
+			receiverToEmitterInfo$: computed((): FullReceiverToEmitterInfo | undefined => {
 				const data = connection.api.data$();
 				if (data) {
 					return {
 						obsActive: data.obsActive,
+						recordingInReceiver: !!data.recording,
 					};
 				}
 			}),
@@ -145,6 +150,7 @@ export const createClientsManager = (
 		const dataSent$ = computed((): ServerSentReceiverInfo => {
 			return {
 				mode: "receiver",
+				record: connection.record$(),
 				recordOptions: config.recordOptions,
 				recordURL,
 				targetDelay: config.targetDelay,
@@ -242,14 +248,20 @@ export const createClientsManager = (
 				async toggleRecording(arg) {
 					const emitter = emitterConnections.get(arg.emitterId);
 					if (emitter) {
-						emitter.record$.update((value) => {
+						const updateFn = (value: string | undefined): string | undefined => {
 							if ((arg.action === "start" && !value) || arg.action === "newFile") {
 								value = createId();
 							} else if (arg.action === "stop") {
 								value = undefined;
 							}
 							return value;
-						});
+						};
+						if (arg.emitter) {
+							emitter.record$.update(updateFn);
+						}
+						if (arg.receiver) {
+							emitter.remoteConnection$()?.record$.update(updateFn);
+						}
 					}
 				},
 			},

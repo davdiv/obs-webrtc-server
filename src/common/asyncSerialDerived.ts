@@ -52,3 +52,7 @@ export function asyncSerialDerived<T, S extends StoresInput>(
 		},
 	);
 }
+
+export const noopOnUseArgument: OnUseArgument<any> = () => {};
+noopOnUseArgument.set = noopOnUseArgument;
+noopOnUseArgument.update = noopOnUseArgument;

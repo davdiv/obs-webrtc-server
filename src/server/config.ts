@@ -12,7 +12,6 @@ export interface ServerConfig {
 	receiverPrefix?: string;
 	rtcConfiguration?: RTCConfiguration;
 	mediaConstraints?: MediaStreamConstraints;
-	record?: boolean;
 	recordPrefix?: string;
 	recordingsFolder?: string;
 	recordOptions?: MediaRecorderOptions;

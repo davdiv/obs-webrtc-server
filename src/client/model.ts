@@ -1,4 +1,4 @@
-import type { OnUseArgument } from "@amadeus-it-group/tansu";
+import type { OnUseArgument, ReadableSignal } from "@amadeus-it-group/tansu";
 import { asReadable, computed, derived, writable } from "@amadeus-it-group/tansu";
 import fastDeepEqual from "fast-deep-equal";
 import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
@@ -7,7 +7,7 @@ import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
 import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, RecordingInfo, Resolution, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
 import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
 import { batteryInfo$ } from "./battery/battery";
-import { record } from "./recordUpload";
+import { recordAndUpload } from "./recordUpload";
 import { createRtcStatsModel } from "./rtcStats";
 import { browserStorageFilesInfo$, removeFileByName, storageInfo$, uploadFile } from "./storage/browserStorage";
 import { recordInBrowserStorage } from "./storage/recordInBrowserStorage";
@@ -65,6 +65,8 @@ export const createModel = () => {
 				audioDelay: audioDelay$(),
 				videoDelay: videoDelay$(),
 				obsActive: obsSourceActive$(),
+				recording: recordReceiverStreamAction$(),
+				videoResolution: receiverStreamResolution$(),
 			} satisfies ClientSentReceiverInfo;
 		}
 	});
@@ -132,19 +134,23 @@ export const createModel = () => {
 	const updateResolution = () => {
 		resolutionRefresh$.set({});
 	};
-	const emitterStreamResolution$ = computed(
-		(): Resolution | undefined => {
-			const emitterStream = emitterStream$();
-			const videoStream = emitterStream?.getVideoTracks()[0];
-			if (videoStream) {
-				resolutionRefresh$();
-				const settings = videoStream.getSettings();
-				return { width: settings.width!, height: settings.height! };
-			}
-			return undefined;
-		},
-		{ equal: fastDeepEqual },
-	);
+	const createStreamResolution = (stream$: ReadableSignal<MediaStream | null>) =>
+		computed(
+			(): Resolution | undefined => {
+				const stream = stream$();
+				const videoStream = stream?.getVideoTracks()[0];
+				if (videoStream) {
+					resolutionRefresh$();
+					const settings = videoStream.getSettings();
+					return { width: settings.width!, height: settings.height! };
+				}
+				return undefined;
+			},
+			{ equal: fastDeepEqual },
+		);
+	const emitterStreamResolution$ = createStreamResolution(emitterStream$);
+	const receiverStreamResolution$ = createStreamResolution(receiverStream$);
+
 	const recordEmitterStreamAction$ = derived(
 		[emitterStream$, computed(() => emitterData$()?.recordOptions, { equal: fastDeepEqual }), computed(() => emitterData$()?.record)],
 		([stream, options, recordId], set) => {
@@ -188,20 +194,20 @@ export const createModel = () => {
 			}
 		}
 	});
-	const recordStreamAction$ = derived(
-		[computed(() => receiverData$()?.recordURL), computed(() => receiverData$()?.recordOptions, { equal: fastDeepEqual }), receiverStream$],
-		([recordURL, recordOptions, stream], set) => {
-			if (stream && recordURL) {
-				return record(stream, recordURL, recordOptions);
+	const recordReceiverStreamAction$ = derived(
+		[computed(() => receiverData$()?.recordURL), computed(() => receiverData$()?.recordOptions, { equal: fastDeepEqual }), receiverStream$, computed(() => receiverData$()?.record)],
+		([recordURL, recordOptions, stream, record], set) => {
+			if (stream && recordURL && record) {
+				return recordAndUpload(stream, recordURL, set, recordOptions);
 			}
 		},
-		undefined,
+		undefined as RecordingInfo | undefined,
 	);
 	const actions$ = computed(() => {
 		socketApi$();
 		updateTracksAction$();
 		applyPlayoutDelayHintAction$();
-		recordStreamAction$();
+		recordReceiverStreamAction$();
 		recordEmitterStreamAction$();
 	});
 
@@ -307,7 +313,7 @@ export const createModel = () => {
 		emitterStream$,
 		receiverStream$: asReadable(receiverStream$),
 		updateResolution,
-		emitterRecording$: recordEmitterStreamAction$,
+		emitterRecording$: computed(() => !!recordEmitterStreamAction$() || !!emitterData$()?.recordingInReceiver),
 		socketApi$,
 	};
 };

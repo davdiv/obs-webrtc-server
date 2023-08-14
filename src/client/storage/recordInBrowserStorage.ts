@@ -1,10 +1,7 @@
 import type { OnUseArgument } from "@amadeus-it-group/tansu";
 import type { RecordingInfo } from "../../common/rpcInterface";
 import { refreshStorageFiles } from "./browserStorage";
-
-const noop: OnUseArgument<any> = () => {};
-noop.set = noop;
-noop.update = noop;
+import { noopOnUseArgument } from "../../common/asyncSerialDerived";
 
 export const recordInBrowserStorage = (stream: MediaStream, set: OnUseArgument<undefined | RecordingInfo>, options?: MediaRecorderOptions) => {
 	console.log("start recording!!");
@@ -48,6 +45,6 @@ export const recordInBrowserStorage = (stream: MediaStream, set: OnUseArgument<u
 		console.log("stopping recording");
 		recorder.stop();
 		set(undefined);
-		set = noop;
+		set = noopOnUseArgument;
 	};
 };
