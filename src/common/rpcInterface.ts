@@ -7,6 +7,12 @@ export interface BatteryInfo {
 
 export type ServerSentInfo = ServerSentEmitterInfo | ServerSentReceiverInfo | ServerSentAdminInfo;
 
+export interface TransformImage {
+	zoom?: number;
+	positionX?: number;
+	positionY?: number;
+}
+
 export interface ServerSentEmitterInfo extends ReceiverToEmitterInfo {
 	mode: "emitter";
 	recordingInReceiver?: boolean;
@@ -21,6 +27,7 @@ export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
 	recordURL?: string;
 	recordOptions?: MediaRecorderOptions;
 	targetDelay?: number;
+	transformImage?: TransformImage;
 }
 
 export interface ServerSentAdminInfo {
@@ -36,6 +43,7 @@ export interface EmitterAdminInfo {
 	emitterInfo?: ClientSentEmitterInfo;
 	receiverIP?: string;
 	receiverInfo?: ClientSentReceiverInfo;
+	transformImage?: TransformImage;
 }
 
 export interface Resolution {
@@ -73,6 +81,7 @@ export interface ClientSentReceiverInfo extends ReceiverToEmitterInfo {
 	videoDelay?: number;
 	recording?: RecordingInfo;
 	videoResolution?: Resolution;
+	viewport?: Resolution;
 }
 
 export interface ReceiverToEmitterInfo {
@@ -104,4 +113,5 @@ export interface RpcServerInterface {
 	uploadFile?(arg: { emitterId: string; fileName: string }): void;
 	removeFile?(arg: { emitterId: string; fileName: string }): void;
 	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile"; receiver?: boolean; emitter?: boolean }): void;
+	transformImage?(arg: { emitterId: string; transformImage: TransformImage | undefined }): void;
 }

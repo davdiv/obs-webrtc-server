@@ -18,14 +18,15 @@ import type {
 	ServerSentEmitterInfo,
 	ServerSentReceiverInfo,
 	StreamInfo,
+	TransformImage,
 } from "../common/rpcInterface";
 import { storeMap } from "../common/storeMap";
 import type { ServerConfig } from "./config";
 import type { obsManager } from "./obs";
 import type { recordingManager } from "./recorder";
+import type { createUploadManager } from "./uploadManager";
 import { createId, hashId } from "./utils/createId";
 import { websocketJsonRpc } from "./websocketJsonRpc";
-import type { createUploadManager } from "./uploadManager";
 
 interface BaseClientConnection {
 	id: string;
@@ -47,6 +48,7 @@ type FullReceiverToEmitterInfo = ReceiverToEmitterInfo & Pick<ServerSentEmitterI
 
 interface ReceiverClientConnection extends BaseClientConnection {
 	record$: WritableSignal<string | undefined>;
+	transformImage$: WritableSignal<TransformImage | undefined>;
 	remoteConnection$: ReadableSignal<EmitterClientConnection | undefined>;
 	receiverToEmitterInfo$: ReadableSignal<FullReceiverToEmitterInfo | undefined>;
 	api: CallMethod<RpcClientInterface, ClientSentReceiverInfo>;
@@ -102,6 +104,7 @@ export const createClientsManager = (
 					emitterInfo: connection.api.data$(),
 					receiverIP: connection.remoteConnection$()?.ip,
 					receiverInfo: connection.remoteConnection$()?.api.data$(),
+					transformImage: connection.remoteConnection$()?.transformImage$(),
 				};
 			}),
 			socket,
@@ -133,6 +136,7 @@ export const createClientsManager = (
 		const connection: ReceiverClientConnection = {
 			id,
 			ip,
+			transformImage$: writable(undefined),
 			record$: writable(undefined),
 			remoteConnection$: readable(emitter),
 			receiverToEmitterInfo$: computed((): FullReceiverToEmitterInfo | undefined => {
@@ -150,6 +154,7 @@ export const createClientsManager = (
 		const dataSent$ = computed((): ServerSentReceiverInfo => {
 			return {
 				mode: "receiver",
+				transformImage: connection.transformImage$(),
 				record: connection.record$(),
 				recordOptions: config.recordOptions,
 				recordURL,
@@ -262,6 +267,12 @@ export const createClientsManager = (
 						if (arg.receiver) {
 							emitter.remoteConnection$()?.record$.update(updateFn);
 						}
+					}
+				},
+				async transformImage(arg) {
+					const emitter = emitterConnections.get(arg.emitterId);
+					if (emitter) {
+						emitter.remoteConnection$()?.transformImage$?.set(arg.transformImage);
 					}
 				},
 			},

@@ -2,7 +2,7 @@
 	import Video from "./Video.svelte";
 	import { model } from "./model";
 
-	const { receiverStream$, updateResolution } = model;
+	const { receiverStream$, receiverData$, updateResolution } = model;
 </script>
 
-<Video stream={$receiverStream$} on:resize={updateResolution} /><br />
+<Video stream={$receiverStream$} transformImage={$receiverData$?.transformImage} on:resize={updateResolution} />

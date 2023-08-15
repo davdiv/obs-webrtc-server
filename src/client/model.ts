@@ -1,5 +1,5 @@
 import type { OnUseArgument, ReadableSignal } from "@amadeus-it-group/tansu";
-import { asReadable, computed, derived, writable } from "@amadeus-it-group/tansu";
+import { asReadable, readable, computed, derived, writable } from "@amadeus-it-group/tansu";
 import fastDeepEqual from "fast-deep-equal";
 import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
 import { asyncSerialDerived } from "../common/asyncSerialDerived";
@@ -25,6 +25,16 @@ if (window.obsstudio) {
 		},
 	} as any;
 }
+
+const viewportSize$ = readable({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight }, (set) => {
+	const update = () => {
+		set({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight });
+	};
+	window.addEventListener("resize", update);
+	return () => {
+		window.removeEventListener("resize", update);
+	};
+});
 
 const computeDelay = (captureDelay: number | undefined, timestampDiff: number | undefined, roundTripTime: number | undefined) =>
 	captureDelay != null && timestampDiff != null && roundTripTime != null ? captureDelay - timestampDiff + roundTripTime / 2 : undefined;
@@ -67,6 +77,7 @@ export const createModel = () => {
 				obsActive: obsSourceActive$(),
 				recording: recordReceiverStreamAction$(),
 				videoResolution: receiverStreamResolution$(),
+				viewport: viewportSize$(),
 			} satisfies ClientSentReceiverInfo;
 		}
 	});

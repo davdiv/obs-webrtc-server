@@ -13,6 +13,7 @@
 	import SpaceAvailable from "../storage/SpaceAvailable.svelte";
 	import { formatSize } from "../storage/formatSize";
 	import RecordingInfo from "./RecordingInfo.svelte";
+	import TransformImage from "../TransformImage.svelte";
 
 	export let emitterId: string;
 	export let emitter: EmitterAdminInfo;
@@ -50,6 +51,18 @@
 			streamInfo={emitter.emitterInfo?.streamInfo}
 			onRecordClick={() => socketApi("toggleRecording", { emitterId, receiver: true, action: "start" })}
 			onStopClick={() => socketApi("toggleRecording", { emitterId, receiver: true, action: "stop" })}
+		/>
+	{/if}
+	{#if emitter.receiverInfo?.viewport && emitter.emitterInfo?.videoResolution}
+		<TransformImage
+			viewportSize={emitter.receiverInfo.viewport}
+			videoResolution={emitter.emitterInfo.videoResolution}
+			transformImage={emitter.transformImage}
+			updateTransformImage={(transformImage) =>
+				socketApi("transformImage", {
+					emitterId,
+					transformImage,
+				})}
 		/>
 	{/if}
 	{#if emitter.receiverInfo?.videoDelay}
