@@ -1,15 +1,15 @@
 <script lang="ts">
-	import Live from "./Live.svelte";
-	import StreamSelection from "./StreamSelection.svelte";
 	import Video from "../Video.svelte";
 	import { model } from "../model";
 	import StoredFilesList from "../storage/StoredFilesList.svelte";
+	import Live from "./Live.svelte";
 	import Recording from "./Recording.svelte";
+	import StreamSource from "./StreamSource.svelte";
 
-	const { emitterStream$, emitterData$, updateResolution, emitterRecording$ } = model;
+	const { emitterStream$, emitterData$, updateResolution, emitterRecording$, emitterStreamConfig$, mediaDevices$ } = model;
 </script>
 
-<StreamSelection bind:stream={$emitterStream$} mediaConstraints={$emitterData$?.mediaConstraints} />
+<StreamSource mediaDevices={$mediaDevices$} mediaConstraints={$emitterData$?.mediaConstraints} bind:streamConfig={$emitterStreamConfig$} stream={$emitterStream$} />
 <Video stream={$emitterStream$} muted on:resize={updateResolution} />
 
 {#if $emitterData$?.obsActive}

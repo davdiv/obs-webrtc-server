@@ -15,11 +15,13 @@
 	import { formatSize } from "../storage/formatSize";
 	import RecordingInfo from "./RecordingInfo.svelte";
 	import TransformImage from "../TransformImage.svelte";
+	import RemoteDevices from "./RemoteDevices.svelte";
 
 	export let emitterId: string;
 	export let emitter: EmitterAdminInfo;
 	export let socketApi: CallMethod<RpcServerInterface, ServerSentInfo>;
 	export let files: ServerSentAdminInfo["files"];
+	export let mediaConstraints: MediaStreamConstraints | undefined;
 
 	let expandRecordedFiles = true;
 </script>
@@ -34,6 +36,13 @@
 			<span>{$_("live")}</span>
 		</div>
 	{/if}
+	<RemoteDevices
+		{mediaConstraints}
+		mediaDevices={emitter.emitterInfo?.mediaDevices}
+		streamConfig={emitter.emitterInfo?.streamConfig}
+		streamInfo={emitter.emitterInfo?.streamInfo}
+		onSetStreamConfig={(streamConfig) => socketApi("changeStreamConfig", { emitterId, streamConfig })}
+	/>
 	<BatteryInfo batteryInfo={emitter.emitterInfo?.batteryInfo} />
 	<SpaceAvailable storageInfo={emitter.emitterInfo?.storageInfo} />
 	<Resolution resolution={emitter.emitterInfo?.videoResolution} hasAudio={emitter.emitterInfo?.streamInfo?.hasAudio} />

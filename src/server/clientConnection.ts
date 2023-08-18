@@ -224,6 +224,7 @@ export const createClientsManager = (
 		const dataSent$ = computed((): ServerSentAdminInfo => {
 			return {
 				mode: "admin",
+				mediaConstraints: config.mediaConstraints,
 				emitters: emitters$(),
 				files: uploadManager.receivedFiles$(),
 			};
@@ -274,6 +275,13 @@ export const createClientsManager = (
 					const emitter = emitterConnections.get(arg.emitterId);
 					if (emitter) {
 						emitter.remoteConnection$()?.transformImage$?.set(arg.transformImage);
+					}
+				},
+				async changeStreamConfig(arg) {
+					const emitter = emitterConnections.get(arg.emitterId);
+					console.log("changeStreamConfig", arg, !!emitter);
+					if (emitter) {
+						emitter?.api("changeStreamConfig", { streamConfig: arg.streamConfig });
 					}
 				},
 			},

@@ -3,13 +3,15 @@
 	import iconFullScreenEnter from "bootstrap-icons/icons/fullscreen.svg?raw";
 	import iconStop from "bootstrap-icons/icons/stop-fill.svg?raw";
 	import { _ } from "svelte-i18n";
+	import type { Devices } from "../../common/rpcInterface";
 	import BatteryInfo from "../battery/BatteryInfo.svelte";
 	import { batteryInfo$ } from "../battery/battery";
 	import { exitFullScreen, fullScreenActive$, fullScreenSupported, requestFullScreen } from "../fullScreen";
-	import type { Devices, StreamConfig } from "../mediaDevices";
+	import type { StreamConfig } from "../mediaDevices";
 	import { ScreenConfig } from "../mediaDevices";
 	import SpaceAvailable from "../storage/SpaceAvailable.svelte";
 	import { storageInfo$ } from "../storage/browserStorage";
+	import SelectDevices from "./SelectDevices.svelte";
 
 	export let mediaConstraints: MediaStreamConstraints | undefined;
 	export let mediaDevices: Devices;
@@ -19,30 +21,8 @@
 
 	$: isSharingScreen = streamConfig instanceof ScreenConfig;
 
-	let selectedVideoDevice = mediaConstraints?.video === false ? "none" : "default";
-	let selectedAudioDevice = mediaConstraints?.audio === false ? "none" : "default";
-
-	const applyConfig = (config: MediaStreamConstraints, type: "audio" | "video", selection: string) => {
-		if (selection === "none") {
-			config[type] = false;
-		} else {
-			let configType = config[type];
-			if (!configType || typeof configType !== "object") {
-				configType = {};
-				config[type] = configType;
-			}
-			if (selection != "default") {
-				configType.deviceId = selection;
-			}
-		}
-	};
-
-	const setConfig = () => {
-		const newConfig = structuredClone(mediaConstraints ?? {});
-		applyConfig(newConfig, "video", selectedVideoDevice);
-		applyConfig(newConfig, "audio", selectedAudioDevice);
-		streamConfig = newConfig;
-	};
+	let selectedVideoDevice: string;
+	let selectedAudioDevice: string;
 
 	const setScreenConfig = () => {
 		streamConfig = new ScreenConfig(true);
@@ -67,26 +47,11 @@
 
 {#if !stream}
 	<div class="container flex vertical">
-		<div class="flex">
-			<label for="videoDevice">{$_("videoDevice")}</label>
-			<select id="videoDevice" bind:value={selectedVideoDevice}>
-				<option value="default">{$_("defaultVideoDevice")}</option>
-				<option value="none">{$_("noVideo")}</option>
-				{#each Object.keys(mediaDevices.videoinput) as id, index}
-					<option value={id}>{mediaDevices.videoinput[id].label || $_("videoDeviceNum", { values: { num: index + 1 } })}</option>
-				{/each}
-			</select>
-		</div>
-		<div class="flex">
-			<label for="audioDevice">{$_("audioDevice")}</label>
-			<select id="audioDevice" bind:value={selectedAudioDevice}>
-				<option value="default">{$_("defaultAudioDevice")}</option>
-				<option value="none">{$_("noAudio")}</option>
-				{#each Object.keys(mediaDevices.audioinput) as id, index}
-					<option value={id}>{mediaDevices.audioinput[id].label || $_("audioDeviceNum", { values: { num: index + 1 } })}</option>
-				{/each}
-			</select>
-		</div>
+		<SelectDevices {mediaConstraints} {mediaDevices} bind:selectedAudioDevice bind:selectedVideoDevice bind:streamConfig
+			><svelte:fragment slot="buttons"
+				>{#if !!navigator.mediaDevices.getDisplayMedia}<button on:click={setScreenConfig}>{$_("shareScreen")}</button>{/if}</svelte:fragment
+			></SelectDevices
+		>
 		{#if fullScreenSupported}
 			<div>
 				<input id="fullScreen" type="checkbox" bind:checked={fullScreen} />
@@ -95,9 +60,6 @@
 		{/if}
 		<SpaceAvailable storageInfo={$storageInfo$} />
 		<BatteryInfo batteryInfo={$batteryInfo$} />
-		<div class="flex">
-			<button on:click={setConfig}>{$_("shareVideoAudioDevices")}</button>{#if !!navigator.mediaDevices.getDisplayMedia}<button on:click={setScreenConfig}>{$_("shareScreen")}</button>{/if}
-		</div>
 		<small><a href="https://github.com/davdiv/obs-webrtc-server" target="_blank" rel="noopener">obs-webrtc-server</a> v{import.meta.env.VERSION}</small>
 	</div>
 {:else}
@@ -116,9 +78,6 @@
 {/if}
 
 <style>
-	select {
-		flex: 1 0;
-	}
 	div.container {
 		border-radius: 10px;
 		padding: 10px;

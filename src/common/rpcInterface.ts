@@ -1,3 +1,7 @@
+export type Devices = {
+	[kind in "audioinput" | "videoinput"]: { [id: string]: { label: string } };
+};
+
 export interface BatteryInfo {
 	charging: boolean;
 	level: number;
@@ -32,6 +36,7 @@ export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
 
 export interface ServerSentAdminInfo {
 	mode: "admin";
+	mediaConstraints?: MediaStreamConstraints;
 	emitters: { [emitterId: string]: EmitterAdminInfo };
 	files: Record<string, number>;
 }
@@ -69,6 +74,8 @@ export interface RecordingInfo extends StoredFileInfo {
 }
 
 export interface ClientSentEmitterInfo extends EmitterToReceiverInfo {
+	mediaDevices?: Devices;
+	streamConfig?: MediaStreamConstraints | "screen";
 	streamInfo?: StreamInfo;
 	videoResolution?: Resolution;
 	recording?: RecordingInfo;
@@ -107,6 +114,7 @@ export interface RpcClientInterface {
 	iceCandidate(arg: { candidate: RTCIceCandidateInit | null }): void;
 	uploadFile(arg: { fileName: string; uploadURL: string }): void;
 	removeFile(arg: { fileName: string }): void;
+	changeStreamConfig?(arg: { streamConfig: MediaStreamConstraints | undefined }): void;
 }
 
 export interface RpcServerInterface {
@@ -115,4 +123,5 @@ export interface RpcServerInterface {
 	removeFile?(arg: { emitterId: string; fileName: string }): void;
 	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile"; receiver?: boolean; emitter?: boolean }): void;
 	transformImage?(arg: { emitterId: string; transformImage: TransformImage | undefined }): void;
+	changeStreamConfig?(arg: { emitterId: string; streamConfig: MediaStreamConstraints | undefined }): void;
 }

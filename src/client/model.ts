@@ -1,5 +1,5 @@
 import type { OnUseArgument, ReadableSignal } from "@amadeus-it-group/tansu";
-import { asReadable, readable, computed, derived, writable } from "@amadeus-it-group/tansu";
+import { asReadable, computed, derived, readable, writable } from "@amadeus-it-group/tansu";
 import fastDeepEqual from "fast-deep-equal";
 import { checkAbortSignal, waitAbortSignal } from "../common/abortUtils";
 import { asyncSerialDerived } from "../common/asyncSerialDerived";
@@ -7,6 +7,8 @@ import type { CallMethod, RemoteInterfaceImpl } from "../common/jsonRpc";
 import type { ClientSentEmitterInfo, ClientSentInfo, ClientSentReceiverInfo, RecordingInfo, Resolution, RpcClientInterface, RpcServerInterface, ServerSentInfo } from "../common/rpcInterface";
 import { addCaptureTimeToRTCConnection, addCaptureTimeToSdp } from "./absoluteCaptureTime";
 import { batteryInfo$ } from "./battery/battery";
+import type { StreamConfig } from "./mediaDevices";
+import { deriveStream, mediaDevices$ } from "./mediaDevices";
 import { recordAndUpload } from "./recordUpload";
 import { createRtcStatsModel } from "./rtcStats";
 import { browserStorageFilesInfo$, removeFileByName, storageInfo$, uploadFile } from "./storage/browserStorage";
@@ -69,6 +71,8 @@ export const createModel = () => {
 				batteryInfo: batteryInfo$(),
 				recording: recordEmitterStreamAction$(),
 				files: browserStorageFilesInfo$(),
+				mediaDevices: mediaDevices$(),
+				streamConfig: emitterStreamConfig$() ?? undefined,
 			} satisfies ClientSentEmitterInfo;
 		} else if (mode === "receiver") {
 			return {
@@ -121,7 +125,8 @@ export const createModel = () => {
 	const peerConnection$ = writable(undefined as RTCPeerConnection | undefined, { equal: Object.is });
 	const receiverStream$ = writable(null as MediaStream | null, { equal: Object.is });
 
-	const emitterStream$ = writable(null as MediaStream | null);
+	const emitterStreamConfig$ = writable(null as StreamConfig);
+	const emitterStream$ = deriveStream(emitterStreamConfig$);
 	const emitterStreamInfo$ = computed(() => {
 		const emitterStream = emitterStream$();
 		const hasAudio = (emitterStream?.getAudioTracks().length ?? 0) > 0;
@@ -293,6 +298,9 @@ export const createModel = () => {
 		async uploadFile(arg) {
 			await uploadFile(arg.fileName, arg.uploadURL);
 		},
+		async changeStreamConfig(arg) {
+			emitterStreamConfig$.set(arg.streamConfig);
+		},
 	};
 
 	const rtcStats = createRtcStatsModel(peerConnection$);
@@ -317,6 +325,8 @@ export const createModel = () => {
 		receiverData$,
 		adminData$,
 		connected$: asReadable(connected$),
+		emitterStreamConfig$,
+		mediaDevices$,
 		emitterStream$,
 		receiverStream$: asReadable(receiverStream$),
 		updateResolution,
