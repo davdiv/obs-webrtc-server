@@ -11,6 +11,7 @@ import { getInstallPath } from "./installPath";
 import { obsManager } from "./obs";
 import { recordingManager } from "./recorder";
 import { createUploadManager } from "./uploadManager";
+import { createLogger } from "./logger";
 
 const dev = import.meta.env.MODE === "development";
 
@@ -54,6 +55,7 @@ export const createServer = async (config: ServerConfig, configFilePath: string)
 	const recorder = recordingManager(config, configFilePath);
 	const uploadManager = createUploadManager(config, configFilePath);
 	const staticServer = await createServeMiddleware(server);
+	const logger = await createLogger(config, configFilePath);
 
 	server.on("request", (req, res) => {
 		if (uploadManager.handleRequest(req, res)) return;
@@ -63,7 +65,7 @@ export const createServer = async (config: ServerConfig, configFilePath: string)
 	const wss = new WebSocketServer({ noServer: true });
 	sendRegularHeartBeat(wss);
 
-	const clientsManager = createClientsManager(config, obs, recorder, uploadManager);
+	const clientsManager = createClientsManager(config, obs, recorder, uploadManager, logger);
 	wss.on("connection", clientsManager.createClientConnection);
 	server.on("upgrade", (request, socket, head) => {
 		const protocol = request.headers["sec-websocket-protocol"];

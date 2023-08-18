@@ -13,6 +13,7 @@ export const stringifyConfig = (config: ServerConfig) => `${configHeader}${yaml.
 
 const defaultConfig = (): ServerConfig => {
 	return {
+		log: "./obs-webrtc-server-log.jsonl",
 		receiverPrefix: `/${createId()}/`,
 		recordPrefix: `/${createId()}/`,
 		recordingsFolder: "./recordings/",

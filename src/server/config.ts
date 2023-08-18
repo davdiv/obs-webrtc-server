@@ -16,6 +16,7 @@ export interface ServerConfig {
 	recordingsFolder?: string;
 	recordOptions?: MediaRecorderOptions;
 	targetDelay?: number;
+	log?: string;
 }
 
 export interface TLSCertificate {

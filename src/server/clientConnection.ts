@@ -27,6 +27,7 @@ import type { recordingManager } from "./recorder";
 import type { createUploadManager } from "./uploadManager";
 import { createId, hashId } from "./utils/createId";
 import { websocketJsonRpc } from "./websocketJsonRpc";
+import type { createLogger } from "./logger";
 
 interface BaseClientConnection {
 	id: string;
@@ -59,6 +60,7 @@ export const createClientsManager = (
 	obs: ReturnType<typeof obsManager>,
 	recorder: ReturnType<typeof recordingManager>,
 	uploadManager: ReturnType<typeof createUploadManager>,
+	logger: ReturnType<typeof createLogger>,
 ) => {
 	const emitterConnections = storeMap<string, EmitterClientConnection>();
 	const receiverConnections = storeMap<string, ReceiverClientConnection>();
@@ -67,6 +69,15 @@ export const createClientsManager = (
 		const removeConnection = connectionsList.add(connection.id, connection);
 		connection.socket.on("close", removeConnection);
 	};
+
+	const createLogActionForStore = <T>(emitter: EmitterClientConnection, type: string, value$: ReadableSignal<T>, curValue: T) =>
+		computed(() => {
+			const value = value$();
+			if (!deepEqual(value, curValue)) {
+				logger({ type, id: emitter.shortId, value: value ?? null });
+				curValue = value;
+			}
+		});
 
 	const iceCandidate =
 		(connection: EmitterClientConnection | ReceiverClientConnection): RemoteInterfaceImpl<RpcServerInterface>["iceCandidate"] =>
@@ -110,6 +121,7 @@ export const createClientsManager = (
 			socket,
 			api: null as any,
 		};
+		logger({ type: "emitterConnect", id: connection.shortId, ip });
 		const dataSent$ = computed((): ServerSentEmitterInfo => {
 			return {
 				mode: "emitter",
@@ -127,27 +139,65 @@ export const createClientsManager = (
 			dataSent$,
 		);
 		addToConnectionsList(connection, emitterConnections);
+		const logEmitterDevicesAction$ = createLogActionForStore(
+			connection,
+			"emitterDevices",
+			computed(() => connection.api.data$()?.mediaDevices ?? { audioinput: {}, videoinput: {} }, { equal: deepEqual }),
+			{ audioinput: {}, videoinput: {} },
+		);
+		const logEmitterStreamConfigAction$ = createLogActionForStore(
+			connection,
+			"emitterStreamConfig",
+			computed(() => connection.api.data$()?.streamConfig, { equal: deepEqual }),
+			undefined,
+		);
+		const logEmitterResolutionAction$ = createLogActionForStore(
+			connection,
+			"emitterResolution",
+			computed(() => connection.api.data$()?.videoResolution, { equal: deepEqual }),
+			undefined,
+		);
+		const logEmitterRecordingAction$ = createLogActionForStore(
+			connection,
+			"emitterRecording",
+			computed(() => connection.api.data$()?.recording?.name, { equal: deepEqual }),
+			undefined,
+		);
+		const actions$ = computed(() => {
+			logEmitterDevicesAction$();
+			logEmitterStreamConfigAction$();
+			logEmitterRecordingAction$();
+			logEmitterResolutionAction$();
+		});
+		subscribeUntilSocketClose(actions$, socket);
 		socket.on("close", obs.addId(id));
+		socket.on("close", () => {
+			logger({ type: "emitterDisconnect", id: connection.shortId });
+		});
 	};
 
 	const createReceiverConnection = (socket: WebSocket, emitter: EmitterClientConnection, ip: string) => {
+		logger({ type: "receiverConnect", id: emitter.shortId, ip });
 		const id = createId();
 		const recordURL = recorder.createRecordURL(emitter.id);
 		const connection: ReceiverClientConnection = {
 			id,
 			ip,
-			transformImage$: writable(undefined),
+			transformImage$: writable(undefined, { equal: deepEqual }),
 			record$: writable(undefined),
 			remoteConnection$: readable(emitter),
-			receiverToEmitterInfo$: computed((): FullReceiverToEmitterInfo | undefined => {
-				const data = connection.api.data$();
-				if (data) {
-					return {
-						obsActive: data.obsActive,
-						recordingInReceiver: !!data.recording,
-					};
-				}
-			}),
+			receiverToEmitterInfo$: computed(
+				(): FullReceiverToEmitterInfo | undefined => {
+					const data = connection.api.data$();
+					if (data) {
+						return {
+							obsActive: !!data.obsActive,
+							recordingInReceiver: !!data.recording,
+						};
+					}
+				},
+				{ equal: deepEqual },
+			),
 			socket,
 			api: null as any,
 		};
@@ -173,6 +223,7 @@ export const createClientsManager = (
 		emitter.remoteConnection$.set(connection);
 		const stillConnected$ = computed(() => emitter.remoteConnection$() === connection);
 		socket.on("close", () => {
+			logger({ type: "receiverDisconnect", id: emitter.shortId });
 			recorder.deleteRecordURL(id);
 			if (stillConnected$()) {
 				emitter.remoteConnection$.set(undefined);
@@ -181,6 +232,25 @@ export const createClientsManager = (
 		emitter.socket.on("close", async () => {
 			socket.close(3001);
 		});
+		const logTransformImageAction$ = createLogActionForStore(emitter, "transformImage", connection.transformImage$, undefined);
+		const logObsActiveAction$ = createLogActionForStore(
+			emitter,
+			"receiverObsActive",
+			computed(() => !!connection.api.data$()?.obsActive),
+			false,
+		);
+		const logViewportAction$ = createLogActionForStore(
+			emitter,
+			"receiverViewport",
+			computed(() => connection.api.data$()?.viewport, { equal: deepEqual }),
+			undefined,
+		);
+		const logReceiverRecordingAction$ = createLogActionForStore(
+			emitter,
+			"receiverRecording",
+			computed(() => connection.api.data$()?.recording?.name, { equal: deepEqual }),
+			undefined,
+		);
 		const connectStreamAction$ = asyncSerialDerived([stillConnected$, emitter.streamInfo$], {
 			async derive([stillConnected, streamInfo], unused, abortSignal) {
 				console.log("stillConnected", stillConnected, "streamInfo", streamInfo);
@@ -209,7 +279,14 @@ export const createClientsManager = (
 				console.log("end derived fn...");
 			},
 		});
-		subscribeUntilSocketClose(connectStreamAction$, socket);
+		const actions$ = computed(() => {
+			connectStreamAction$();
+			logTransformImageAction$();
+			logObsActiveAction$();
+			logViewportAction$();
+			logReceiverRecordingAction$();
+		});
+		subscribeUntilSocketClose(actions$, socket);
 	};
 
 	const createAdminConnection = (socket: WebSocket) => {
