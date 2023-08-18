@@ -5,6 +5,8 @@ import { mkdir } from "fs/promises";
 import { createId } from "./utils/createId";
 import { createWriteStream } from "fs";
 import { pipeline } from "stream/promises";
+import { immerWritable } from "../common/immerWritable";
+import equal from "fast-deep-equal";
 
 export interface FileInfo {
 	emitterShortId: string;
@@ -12,6 +14,7 @@ export interface FileInfo {
 }
 
 export const createUploadManager = (config: Pick<ServerConfig, "recordPrefix" | "recordingsFolder">, configFilePath: string) => {
+	const receivedFiles$ = immerWritable({} as Record<string, number>, { equal });
 	const recordURLs = new Map<string, FileInfo>();
 	const recordPrefix = config.recordPrefix!;
 	const extractId = (url: string) => {
@@ -28,7 +31,15 @@ export const createUploadManager = (config: Pick<ServerConfig, "recordPrefix" | 
 			const fullFileName = join(recordingsFolder, fileInfo.emitterShortId, fileInfo.fileName);
 			await mkdir(dirname(fullFileName), { recursive: true });
 			const stream = createWriteStream(fullFileName);
+			const update = () =>
+				receivedFiles$.update((receivedFiles) => {
+					receivedFiles[`${fileInfo.emitterShortId}/${fileInfo.fileName}`] = stream.bytesWritten;
+					return receivedFiles;
+				});
+			update();
+			req.on("data", update);
 			await pipeline(req, stream);
+			update();
 			res.statusCode = 200;
 			res.end(JSON.stringify({}));
 		} catch (error) {
@@ -39,6 +50,7 @@ export const createUploadManager = (config: Pick<ServerConfig, "recordPrefix" | 
 	};
 
 	return {
+		receivedFiles$,
 		createUploadURL(info: FileInfo) {
 			const id = createId();
 			recordURLs.set(id, info);

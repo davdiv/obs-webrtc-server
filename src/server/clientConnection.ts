@@ -225,6 +225,7 @@ export const createClientsManager = (
 			return {
 				mode: "admin",
 				emitters: emitters$(),
+				files: uploadManager.receivedFiles$(),
 			};
 		});
 		websocketJsonRpc<RpcClientInterface, RpcServerInterface, Record<string, never>, ServerSentAdminInfo>(

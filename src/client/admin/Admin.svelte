@@ -9,7 +9,7 @@
 	{#if $adminData$ && $socketApi$}
 		<div>
 			{#each Object.keys($adminData$.emitters) as emitterId}
-				<EmitterInfo emitter={$adminData$.emitters[emitterId]} {emitterId} socketApi={$socketApi$} />
+				<EmitterInfo emitter={$adminData$.emitters[emitterId]} {emitterId} socketApi={$socketApi$} files={$adminData$.files} />
 			{/each}
 		</div>
 	{/if}

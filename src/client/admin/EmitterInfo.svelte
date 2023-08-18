@@ -5,9 +5,10 @@
 	import iconFile from "bootstrap-icons/icons/file.svg?raw";
 	import iconDelete from "bootstrap-icons/icons/trash.svg?raw";
 	import iconUpload from "bootstrap-icons/icons/upload.svg?raw";
+	import iconFileCheck from "bootstrap-icons/icons/file-check.svg?raw";
 	import { _ } from "svelte-i18n";
 	import type { CallMethod } from "../../common/jsonRpc";
-	import type { EmitterAdminInfo, RpcServerInterface, ServerSentInfo } from "../../common/rpcInterface";
+	import type { EmitterAdminInfo, RpcServerInterface, ServerSentAdminInfo, ServerSentInfo } from "../../common/rpcInterface";
 	import Resolution from "../Resolution.svelte";
 	import BatteryInfo from "../battery/BatteryInfo.svelte";
 	import SpaceAvailable from "../storage/SpaceAvailable.svelte";
@@ -18,6 +19,7 @@
 	export let emitterId: string;
 	export let emitter: EmitterAdminInfo;
 	export let socketApi: CallMethod<RpcServerInterface, ServerSentInfo>;
+	export let files: ServerSentAdminInfo["files"];
 
 	let expandRecordedFiles = true;
 </script>
@@ -89,10 +91,17 @@
 		{#if expandRecordedFiles}
 			<div>
 				{#each emitter.emitterInfo.files as file}
+					{@const keyInFiles = `${emitter.emitterShortId}/${file.name}`}
+					{@const valueInFiles = files?.[keyInFiles]}
 					<div class="flex">
 						{@html iconFile}<span>{file.name} ({formatSize(file.size, $_)})</span><button class="flex" on:click={() => socketApi("uploadFile", { emitterId, fileName: file.name })}
 							>{@html iconUpload}</button
 						><button class="flex" on:click={() => socketApi("removeFile", { emitterId, fileName: file.name })}>{@html iconDelete}</button>
+						{#if valueInFiles === file.size}
+							{@html iconFileCheck}
+						{:else if valueInFiles != null}
+							<progress value={valueInFiles} max={file.size}>{formatSize(valueInFiles, $_)}</progress>
+						{/if}
 					</div>
 				{/each}
 			</div>

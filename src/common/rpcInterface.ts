@@ -33,6 +33,7 @@ export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
 export interface ServerSentAdminInfo {
 	mode: "admin";
 	emitters: { [emitterId: string]: EmitterAdminInfo };
+	files: Record<string, number>;
 }
 
 export type ClientSentInfo = ClientSentEmitterInfo | ClientSentReceiverInfo | undefined;
