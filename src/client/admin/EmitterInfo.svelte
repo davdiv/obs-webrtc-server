@@ -103,13 +103,14 @@
 					{@const keyInFiles = `${emitter.emitterShortId}/${file.name}`}
 					{@const valueInFiles = files?.[keyInFiles]}
 					<div class="flex">
-						{@html iconFile}<span>{file.name} ({formatSize(file.size, $_)})</span><button class="flex" on:click={() => socketApi("uploadFile", { emitterId, fileName: file.name })}
-							>{@html iconUpload}</button
+						{@html iconFile}<span>{file.name} (<span title={$_("byte", { values: { size: file.size } })}>{formatSize(file.size, $_)}</span>)</span><button
+							class="flex"
+							on:click={() => socketApi("uploadFile", { emitterId, fileName: file.name, startByte: valueInFiles != null && valueInFiles < file.size ? valueInFiles : 0 })}>{@html iconUpload}</button
 						><button class="flex" on:click={() => socketApi("removeFile", { emitterId, fileName: file.name })}>{@html iconDelete}</button>
 						{#if valueInFiles === file.size}
 							{@html iconFileCheck}
 						{:else if valueInFiles != null}
-							<progress value={valueInFiles} max={file.size}>{formatSize(valueInFiles, $_)}</progress>
+							<span title={$_("byte", { values: { size: valueInFiles } })}>{formatSize(valueInFiles, $_)}</span><progress value={valueInFiles} max={file.size}></progress>
 						{/if}
 					</div>
 				{/each}

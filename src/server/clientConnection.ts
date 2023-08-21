@@ -314,10 +314,12 @@ export const createClientsManager = (
 						const uploadURL = uploadManager.createUploadURL({
 							emitterShortId: emitter.shortId,
 							fileName: arg.fileName,
+							startByte: arg.startByte,
 						});
 						await emitter.api?.("uploadFile", {
 							fileName: arg.fileName,
 							uploadURL,
+							startByte: arg.startByte,
 						});
 					}
 				},

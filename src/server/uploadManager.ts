@@ -11,6 +11,7 @@ import equal from "fast-deep-equal";
 export interface FileInfo {
 	emitterShortId: string;
 	fileName: string;
+	startByte: number;
 }
 
 export const createUploadManager = (config: Pick<ServerConfig, "recordPrefix" | "recordingsFolder">, configFilePath: string) => {
@@ -30,10 +31,10 @@ export const createUploadManager = (config: Pick<ServerConfig, "recordPrefix" | 
 		try {
 			const fullFileName = join(recordingsFolder, fileInfo.emitterShortId, fileInfo.fileName);
 			await mkdir(dirname(fullFileName), { recursive: true });
-			const stream = createWriteStream(fullFileName);
+			const stream = createWriteStream(fullFileName, { start: fileInfo.startByte, flags: fileInfo.startByte === 0 ? "w" : "r+" });
 			const update = () =>
 				receivedFiles$.update((receivedFiles) => {
-					receivedFiles[`${fileInfo.emitterShortId}/${fileInfo.fileName}`] = stream.bytesWritten;
+					receivedFiles[`${fileInfo.emitterShortId}/${fileInfo.fileName}`] = fileInfo.startByte + stream.bytesWritten;
 					return receivedFiles;
 				});
 			update();

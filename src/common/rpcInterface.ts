@@ -112,14 +112,14 @@ export interface RpcClientInterface {
 	createAnswerRTCConnection(arg: { offer: RTCSessionDescriptionInit }): RTCSessionDescriptionInit;
 	completeOfferRTCConnection(arg: { answer: RTCSessionDescriptionInit }): void;
 	iceCandidate(arg: { candidate: RTCIceCandidateInit | null }): void;
-	uploadFile(arg: { fileName: string; uploadURL: string }): void;
+	uploadFile(arg: { fileName: string; uploadURL: string; startByte: number }): void;
 	removeFile(arg: { fileName: string }): void;
 	changeStreamConfig?(arg: { streamConfig: MediaStreamConstraints | undefined }): void;
 }
 
 export interface RpcServerInterface {
 	iceCandidate?(arg: { candidate: RTCIceCandidateInit | null }): void;
-	uploadFile?(arg: { emitterId: string; fileName: string }): void;
+	uploadFile?(arg: { emitterId: string; fileName: string; startByte: number }): void;
 	removeFile?(arg: { emitterId: string; fileName: string }): void;
 	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile"; receiver?: boolean; emitter?: boolean }): void;
 	transformImage?(arg: { emitterId: string; transformImage: TransformImage | undefined }): void;

@@ -296,7 +296,7 @@ export const createModel = () => {
 			await removeFileByName(arg.fileName);
 		},
 		async uploadFile(arg) {
-			await uploadFile(arg.fileName, arg.uploadURL);
+			await uploadFile(arg.fileName, arg.uploadURL, arg.startByte);
 		},
 		async changeStreamConfig(arg) {
 			emitterStreamConfig$.set(arg.streamConfig);

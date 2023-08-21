@@ -77,13 +77,13 @@ export const removeFileByName = async (name: string) => {
 	refreshStorageFiles();
 };
 
-export const uploadFile = async (name: string, url: string) => {
+export const uploadFile = async (name: string, url: string, startByte: number) => {
 	const directory = await navigator.storage.getDirectory();
 	const fileHandle = await directory.getFileHandle(name);
 	const body = await fileHandle.getFile();
 	const res = await fetch(url, {
 		method: "PUT",
-		body,
+		body: body.slice(startByte),
 	});
 	console.log(res);
 };
