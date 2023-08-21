@@ -50,7 +50,9 @@ const sendRegularHeartBeat = (wss: WebSocketServer) => {
 };
 
 export const createServer = async (config: ServerConfig, configFilePath: string) => {
-	const server = createHttpServer();
+	const server = createHttpServer({
+		requestTimeout: 0, // disable request timeout to avoid interrupting the upload of recorded files
+	});
 	const obs = obsManager(config, (id) => `${obsPrefix}${id}`);
 	const recorder = recordingManager(config, configFilePath);
 	const uploadManager = createUploadManager(config, configFilePath);
