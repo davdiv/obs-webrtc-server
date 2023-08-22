@@ -34,11 +34,16 @@ export interface ServerSentReceiverInfo extends EmitterToReceiverInfo {
 	transformImage?: TransformImage;
 }
 
+export interface ServerFileInfo {
+	open: boolean;
+	size: number;
+}
+
 export interface ServerSentAdminInfo {
 	mode: "admin";
 	mediaConstraints?: MediaStreamConstraints;
 	emitters: { [emitterId: string]: EmitterAdminInfo };
-	files: Record<string, number>;
+	files: Record<string, ServerFileInfo>;
 }
 
 export type ClientSentInfo = ClientSentEmitterInfo | ClientSentReceiverInfo | undefined;
@@ -120,6 +125,7 @@ export interface RpcClientInterface {
 export interface RpcServerInterface {
 	iceCandidate?(arg: { candidate: RTCIceCandidateInit | null }): void;
 	uploadFile?(arg: { emitterId: string; fileName: string; startByte: number }): void;
+	stopUpload?(arg: { emitterId: string; fileName: string }): void;
 	removeFile?(arg: { emitterId: string; fileName: string }): void;
 	toggleRecording?(arg: { emitterId: string; action: "stop" | "start" | "newFile"; receiver?: boolean; emitter?: boolean }): void;
 	transformImage?(arg: { emitterId: string; transformImage: TransformImage | undefined }): void;

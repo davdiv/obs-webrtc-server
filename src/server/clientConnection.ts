@@ -323,6 +323,12 @@ export const createClientsManager = (
 						});
 					}
 				},
+				async stopUpload(arg) {
+					const emitter = emitterConnections.get(arg.emitterId);
+					if (emitter) {
+						uploadManager.stopUpload(`${emitter.shortId}/${arg.fileName}`);
+					}
+				},
 				async removeFile(arg) {
 					const emitter = emitterConnections.get(arg.emitterId);
 					if (emitter) {

@@ -6,6 +6,7 @@
 	import iconDelete from "bootstrap-icons/icons/trash.svg?raw";
 	import iconUpload from "bootstrap-icons/icons/upload.svg?raw";
 	import iconFileCheck from "bootstrap-icons/icons/file-check.svg?raw";
+	import iconStop from "bootstrap-icons/icons/stop.svg?raw";
 	import { _ } from "svelte-i18n";
 	import type { CallMethod } from "../../common/jsonRpc";
 	import type { EmitterAdminInfo, RpcServerInterface, ServerSentAdminInfo, ServerSentInfo } from "../../common/rpcInterface";
@@ -101,16 +102,21 @@
 			<div>
 				{#each emitter.emitterInfo.files as file}
 					{@const keyInFiles = `${emitter.emitterShortId}/${file.name}`}
-					{@const valueInFiles = files?.[keyInFiles]}
+					{@const serverFileInfo = files?.[keyInFiles]}
 					<div class="flex">
 						{@html iconFile}<span>{file.name} (<span title={$_("byte", { values: { size: file.size } })}>{formatSize(file.size, $_)}</span>)</span><button
 							class="flex"
-							on:click={() => socketApi("uploadFile", { emitterId, fileName: file.name, startByte: valueInFiles != null && valueInFiles < file.size ? valueInFiles : 0 })}>{@html iconUpload}</button
+							on:click={() => socketApi("uploadFile", { emitterId, fileName: file.name, startByte: serverFileInfo && serverFileInfo.size < file.size ? serverFileInfo.size : 0 })}
+							>{@html iconUpload}</button
 						><button class="flex" on:click={() => socketApi("removeFile", { emitterId, fileName: file.name })}>{@html iconDelete}</button>
-						{#if valueInFiles === file.size}
+						{#if serverFileInfo?.size === file.size && !serverFileInfo?.open}
 							{@html iconFileCheck}
-						{:else if valueInFiles != null}
-							<span title={$_("byte", { values: { size: valueInFiles } })}>{formatSize(valueInFiles, $_)}</span><progress value={valueInFiles} max={file.size}></progress>
+						{:else if serverFileInfo}
+							<span title={$_("byte", { values: { size: serverFileInfo.size } })}>{formatSize(serverFileInfo.size, $_)}</span>
+							{#if serverFileInfo.open}
+								<button class="flex" on:click={() => socketApi("stopUpload", { emitterId, fileName: file.name })}>{@html iconStop}</button>
+								<progress value={serverFileInfo.size} max={file.size}></progress>
+							{/if}
 						{/if}
 					</div>
 				{/each}
